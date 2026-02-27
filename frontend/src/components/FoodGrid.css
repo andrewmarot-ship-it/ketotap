@@ -1,0 +1,142 @@
+.food-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  padding-bottom: 32px;
+}
+
+@media (max-width: 360px) {
+  .food-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+}
+
+@media (min-width: 500px) {
+  .food-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.food-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--card);
+  border-radius: 16px;
+  padding: 12px 8px;
+  border: 2px solid transparent;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  transition: transform 0.1s, box-shadow 0.1s, border-color 0.15s;
+  text-align: center;
+  gap: 6px;
+  cursor: pointer;
+  width: 100%;
+  min-height: 130px;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.food-tile:active {
+  transform: scale(0.94);
+  box-shadow: 0 0 0 3px var(--primary);
+}
+
+.food-tile--active {
+  border-color: var(--primary);
+  background: #f0fdf4;
+}
+
+.food-tile--tapping {
+  transform: scale(0.94);
+  box-shadow: 0 0 0 3px var(--primary);
+}
+
+.food-tile-img-wrap {
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.food-tile-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.food-tile-emoji {
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+}
+
+.food-tile-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+}
+
+.food-tile-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.food-tile-serving {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.2;
+}
+
+.food-tile-cals {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--primary-dark);
+}
+
+.food-tile-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: var(--primary);
+  color: white;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.food-tile-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  background: rgba(46, 204, 113, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--primary-dark);
+  pointer-events: none;
+}
+
+.food-grid-empty {
+  text-align: center;
+  padding: 40px 16px;
+  color: var(--text-secondary);
+  line-height: 1.8;
+}
