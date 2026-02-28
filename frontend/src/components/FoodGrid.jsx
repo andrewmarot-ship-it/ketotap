@@ -1,38 +1,35 @@
 import './FoodGrid.css';
 
-function FoodTile({ food, servings, onTap, onLongPress, tapping }) {
-  const isProcessing = tapping === food.id;
-
+function FoodTile({ food, servings, onAdd, onRemove }) {
   return (
-    <div
-      className={`food-tile ${servings > 0 ? 'food-tile--active' : ''} ${isProcessing ? 'food-tile--tapping' : ''}`}
-      onClick={() => onTap(food)}
-    >
-      {/* Minus — top left, only visible when serving count > 0 */}
+    <div className={`food-tile ${servings > 0 ? 'food-tile--active' : ''}`}>
+
+      {/* Minus — top-left, only when a serving has been logged */}
       {servings > 0 && (
         <button
           className="tile-adj tile-adj--minus"
-          onClick={e => { e.stopPropagation(); onLongPress(food); }}
+          onClick={() => onRemove(food)}
           aria-label="Remove serving"
         >
           −
         </button>
       )}
 
-      {/* Plus — top right, always visible */}
+      {/* Plus — top-right, always visible */}
       <button
         className="tile-adj tile-adj--plus"
-        onClick={e => { e.stopPropagation(); onTap(food); }}
+        onClick={() => onAdd(food)}
         aria-label="Add serving"
       >
         +
       </button>
 
-      {/* Serving count — centered between the two buttons */}
+      {/* Serving count between the buttons */}
       {servings > 0 && (
         <div className="food-tile-count">×{servings}</div>
       )}
 
+      {/* Food image or emoji */}
       <div className="food-tile-img-wrap">
         {food.image_url ? (
           <img
@@ -42,7 +39,12 @@ function FoodTile({ food, servings, onTap, onLongPress, tapping }) {
             onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
           />
         ) : null}
-        <div className="food-tile-emoji" style={{ display: food.image_url ? 'none' : 'flex' }}>🍽️</div>
+        <div
+          className="food-tile-emoji"
+          style={{ display: food.image_url ? 'none' : 'flex' }}
+        >
+          {food.emoji || '🍽️'}
+        </div>
       </div>
 
       <div className="food-tile-info">
@@ -54,7 +56,7 @@ function FoodTile({ food, servings, onTap, onLongPress, tapping }) {
   );
 }
 
-export default function FoodGrid({ foods, logs, onTap, onLongPress, tapping }) {
+export default function FoodGrid({ foods, logs, onAdd, onRemove }) {
   const servingsMap = {};
   for (const log of logs) {
     servingsMap[log.food_id] = log.servings;
@@ -76,9 +78,8 @@ export default function FoodGrid({ foods, logs, onTap, onLongPress, tapping }) {
           key={food.id}
           food={food}
           servings={servingsMap[food.id] || 0}
-          onTap={onTap}
-          onLongPress={onLongPress}
-          tapping={tapping}
+          onAdd={onAdd}
+          onRemove={onRemove}
         />
       ))}
     </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { targetsApi, foodsApi, logsApi } from '../api/client';
@@ -11,14 +11,17 @@ function todayStr() {
 }
 
 export default function DashboardPage() {
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
   const [targets, setTargets] = useState(null);
   const [foods, setFoods] = useState([]);
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [tapping, setTapping] = useState(null); // food id being tapped
   const [isDayCompleted, setIsDayCompleted] = useState(false);
   const [completing, setCompleting] = useState(false);
+
+  // Track the server-confirmed serving count per food so rapid taps
+  // never show a stale lower count when responses arrive out of order.
+  const serverCounts = useRef({});
 
   const today = todayStr();
 
@@ -34,6 +37,11 @@ export default function DashboardPage() {
       setFoods(fRes.data);
       setLogs(lRes.data);
       setIsDayCompleted(cRes.data.completed);
+      // Seed serverCounts from loaded logs
+      serverCounts.current = {};
+      for (const log of lRes.data) {
+        serverCounts.current[log.food_id] = log.servings;
+      }
     } catch (e) {
       console.error(e);
     } finally {
@@ -51,8 +59,8 @@ export default function DashboardPage() {
     carbs_g: acc.carbs_g + log.carbs_g * log.servings,
   }), { calories: 0, fat_g: 0, protein_g: 0, carbs_g: 0 });
 
-  async function handleTap(food) {
-    // Optimistic update: increment serving count immediately so rapid taps feel instant
+  async function handleAdd(food) {
+    // 1. Optimistic: increment immediately so the UI feels instant
     setLogs(prev => {
       const idx = prev.findIndex(l => l.food_id === food.id);
       if (idx >= 0) {
@@ -60,8 +68,9 @@ export default function DashboardPage() {
         updated[idx] = { ...updated[idx], servings: updated[idx].servings + 1 };
         return updated;
       }
+      // First serving — create a placeholder entry
       return [...prev, {
-        id: `temp-${food.id}-${Date.now()}`,
+        id: `opt-${food.id}`,
         food_id: food.id,
         servings: 1,
         name: food.name,
@@ -71,40 +80,58 @@ export default function DashboardPage() {
         protein_g: food.protein_g,
         carbs_g: food.carbs_g,
         image_url: food.image_url,
-        timestamp: new Date().toISOString(),
+        emoji: food.emoji,
       }];
     });
 
-    setTapping(food.id);
     try {
       const res = await logsApi.add(food.id, today);
-      const newLog = res.data;
-      // Sync with server, but never decrease below our optimistic count (protect against race)
+      const serverLog = res.data;
+
+      // Record the latest confirmed server count
+      serverCounts.current[food.id] = serverLog.servings;
+
+      // Sync: use whichever is higher (optimistic vs server) to handle out-of-order responses
       setLogs(prev => {
         const idx = prev.findIndex(l => l.food_id === food.id);
-        if (idx >= 0) {
-          const updated = [...prev];
-          updated[idx] = { ...newLog, servings: Math.max(newLog.servings, updated[idx].servings) };
-          return updated;
-        }
-        return [...prev, newLog];
+        if (idx < 0) return [...prev, serverLog];
+        const updated = [...prev];
+        const best = Math.max(serverLog.servings, serverCounts.current[food.id] || 0, updated[idx].servings);
+        updated[idx] = { ...serverLog, servings: best };
+        return updated;
       });
     } catch (e) {
       console.error(e);
-      // Revert to server state on error
+      // On error revert to authoritative server state
       logsApi.getDay(today).then(r => setLogs(r.data)).catch(() => {});
-    } finally {
-      setTapping(null);
     }
   }
 
-  async function handleLongPress(food) {
-    const log = logs.find(l => l.food_id === food.id);
-    if (!log) return;
+  async function handleRemove(food) {
+    // Find the current log entry by food_id using the functional updater
+    // to avoid stale closure issues with the `logs` variable
+    let logId = null;
+    setLogs(prev => {
+      const log = prev.find(l => l.food_id === food.id);
+      if (log) logId = log.id;
+      return prev; // no change yet
+    });
+
+    if (!logId || String(logId).startsWith('opt-')) {
+      // Entry not committed to server yet — just re-fetch to sync
+      logsApi.getDay(today).then(r => setLogs(r.data)).catch(() => {});
+      return;
+    }
+
     try {
-      await logsApi.remove(log.id);
+      await logsApi.remove(logId);
       const res = await logsApi.getDay(today);
       setLogs(res.data);
+      // Refresh serverCounts
+      serverCounts.current = {};
+      for (const log of res.data) {
+        serverCounts.current[log.food_id] = log.servings;
+      }
     } catch (e) {
       console.error(e);
     }
@@ -147,7 +174,7 @@ export default function DashboardPage() {
       </header>
 
       <main className="dash-main">
-        {/* Date + greeting */}
+        {/* Date */}
         <div className="dash-date">
           <span>{formatDate()}</span>
         </div>
@@ -205,13 +232,12 @@ export default function DashboardPage() {
         </div>
 
         {/* Food Grid */}
-        <div className="dash-section-label">Tap to log food</div>
+        <div className="dash-section-label">Tap + to log · − to remove</div>
         <FoodGrid
           foods={foods}
           logs={logs}
-          onTap={handleTap}
-          onLongPress={handleLongPress}
-          tapping={tapping}
+          onAdd={handleAdd}
+          onRemove={handleRemove}
         />
       </main>
     </div>
