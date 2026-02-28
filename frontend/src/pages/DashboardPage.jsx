@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { targetsApi, foodsApi, logsApi } from '../api/client';
@@ -19,10 +19,6 @@ export default function DashboardPage() {
   const [isDayCompleted, setIsDayCompleted] = useState(false);
   const [completing, setCompleting] = useState(false);
 
-  // Track the server-confirmed serving count per food so rapid taps
-  // never show a stale lower count when responses arrive out of order.
-  const serverCounts = useRef({});
-
   const today = todayStr();
 
   const loadData = useCallback(async () => {
@@ -37,11 +33,6 @@ export default function DashboardPage() {
       setFoods(fRes.data);
       setLogs(lRes.data);
       setIsDayCompleted(cRes.data.completed);
-      // Seed serverCounts from loaded logs
-      serverCounts.current = {};
-      for (const log of lRes.data) {
-        serverCounts.current[log.food_id] = log.servings;
-      }
     } catch (e) {
       console.error(e);
     } finally {
@@ -60,7 +51,7 @@ export default function DashboardPage() {
   }), { calories: 0, fat_g: 0, protein_g: 0, carbs_g: 0 });
 
   async function handleAdd(food) {
-    // 1. Optimistic: increment immediately so the UI feels instant
+    // Optimistic: show the increment immediately
     setLogs(prev => {
       const idx = prev.findIndex(l => l.food_id === food.id);
       if (idx >= 0) {
@@ -68,7 +59,6 @@ export default function DashboardPage() {
         updated[idx] = { ...updated[idx], servings: updated[idx].servings + 1 };
         return updated;
       }
-      // First serving — create a placeholder entry
       return [...prev, {
         id: `opt-${food.id}`,
         food_id: food.id,
@@ -87,51 +77,37 @@ export default function DashboardPage() {
     try {
       const res = await logsApi.add(food.id, today);
       const serverLog = res.data;
-
-      // Record the latest confirmed server count
-      serverCounts.current[food.id] = serverLog.servings;
-
-      // Sync: use whichever is higher (optimistic vs server) to handle out-of-order responses
+      // Only apply the server value if it's higher than our current
+      // optimistic count — prevents out-of-order responses from
+      // stepping on a higher count from a subsequent rapid tap.
       setLogs(prev => {
         const idx = prev.findIndex(l => l.food_id === food.id);
         if (idx < 0) return [...prev, serverLog];
+        if (serverLog.servings <= prev[idx].servings) return prev;
         const updated = [...prev];
-        const best = Math.max(serverLog.servings, serverCounts.current[food.id] || 0, updated[idx].servings);
-        updated[idx] = { ...serverLog, servings: best };
+        updated[idx] = serverLog;
         return updated;
       });
     } catch (e) {
       console.error(e);
-      // On error revert to authoritative server state
       logsApi.getDay(today).then(r => setLogs(r.data)).catch(() => {});
     }
   }
 
   async function handleRemove(food) {
-    // Find the current log entry by food_id using the functional updater
-    // to avoid stale closure issues with the `logs` variable
-    let logId = null;
-    setLogs(prev => {
-      const log = prev.find(l => l.food_id === food.id);
-      if (log) logId = log.id;
-      return prev; // no change yet
-    });
+    // Read directly from `logs` — handleRemove is re-created on every
+    // render so this closure always holds the current state.
+    const log = logs.find(l => l.food_id === food.id);
+    if (!log) return;
 
-    if (!logId || String(logId).startsWith('opt-')) {
-      // Entry not committed to server yet — just re-fetch to sync
-      logsApi.getDay(today).then(r => setLogs(r.data)).catch(() => {});
-      return;
-    }
+    // If the entry is still optimistic (hasn't been committed yet), skip
+    if (String(log.id).startsWith('opt-')) return;
 
     try {
-      await logsApi.remove(logId);
+      await logsApi.remove(log.id);
+      // Re-fetch to get authoritative counts after the removal
       const res = await logsApi.getDay(today);
       setLogs(res.data);
-      // Refresh serverCounts
-      serverCounts.current = {};
-      for (const log of res.data) {
-        serverCounts.current[log.food_id] = log.servings;
-      }
     } catch (e) {
       console.error(e);
     }
@@ -157,7 +133,6 @@ export default function DashboardPage() {
 
   return (
     <div className="dash-page">
-      {/* Header */}
       <header className="dash-header">
         <div className="dash-header-inner">
           <div className="dash-brand">
@@ -174,12 +149,10 @@ export default function DashboardPage() {
       </header>
 
       <main className="dash-main">
-        {/* Date */}
         <div className="dash-date">
           <span>{formatDate()}</span>
         </div>
 
-        {/* Macro Summary */}
         {targets && (
           <div className="macro-summary card">
             <div className="macro-row">
@@ -220,7 +193,6 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Complete Day */}
         <div className="dash-complete">
           <button
             className={`complete-btn ${isDayCompleted ? 'complete-btn--done' : ''}`}
@@ -231,7 +203,6 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        {/* Food Grid */}
         <div className="dash-section-label">Tap + to log · − to remove</div>
         <FoodGrid
           foods={foods}
