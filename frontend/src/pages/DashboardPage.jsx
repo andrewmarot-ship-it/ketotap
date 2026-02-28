@@ -51,48 +51,12 @@ export default function DashboardPage() {
   }), { calories: 0, fat_g: 0, protein_g: 0, carbs_g: 0 });
 
   async function handleAdd(food) {
-    // Optimistic: show the increment immediately
-    setLogs(prev => {
-      const idx = prev.findIndex(l => l.food_id === food.id);
-      if (idx >= 0) {
-        const updated = [...prev];
-        updated[idx] = { ...updated[idx], servings: updated[idx].servings + 1 };
-        return updated;
-      }
-      return [...prev, {
-        id: `opt-${food.id}`,
-        food_id: food.id,
-        servings: 1,
-        name: food.name,
-        serving_description: food.serving_description,
-        calories: food.calories,
-        fat_g: food.fat_g,
-        protein_g: food.protein_g,
-        carbs_g: food.carbs_g,
-        image_url: food.image_url,
-        emoji: food.emoji,
-      }];
-    });
-
     try {
-      const res = await logsApi.add(food.id, today);
-      const serverLog = res.data;
-      // Only apply the server value if it's higher than our current
-      // optimistic count — prevents out-of-order responses from
-      // stepping on a higher count from a subsequent rapid tap.
-      setLogs(prev => {
-        const idx = prev.findIndex(l => l.food_id === food.id);
-        if (idx < 0) return [...prev, serverLog];
-        const updated = [...prev];
-        // Always replace with server entry to get the real DB id.
-        // Keep whichever servings count is higher (rapid taps may have
-        // already optimistically incremented beyond what this response knows).
-        updated[idx] = { ...serverLog, servings: Math.max(serverLog.servings, prev[idx].servings) };
-        return updated;
-      });
+      await logsApi.add(food.id, today);
+      const res = await logsApi.getDay(today);
+      setLogs(res.data);
     } catch (e) {
-      console.error(e);
-      logsApi.getDay(today).then(r => setLogs(r.data)).catch(() => {});
+      console.error('handleAdd failed', e.response?.status, e.response?.data, e);
     }
   }
 
