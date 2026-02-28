@@ -17,19 +17,23 @@ export default function DashboardPage() {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tapping, setTapping] = useState(null); // food id being tapped
+  const [isDayCompleted, setIsDayCompleted] = useState(false);
+  const [completing, setCompleting] = useState(false);
 
   const today = todayStr();
 
   const loadData = useCallback(async () => {
     try {
-      const [tRes, fRes, lRes] = await Promise.all([
+      const [tRes, fRes, lRes, cRes] = await Promise.all([
         targetsApi.get(),
         foodsApi.list(),
         logsApi.getDay(today),
+        logsApi.isCompleted(today),
       ]);
       setTargets(tRes.data);
       setFoods(fRes.data);
       setLogs(lRes.data);
+      setIsDayCompleted(cRes.data.completed);
     } catch (e) {
       console.error(e);
     } finally {
@@ -48,37 +52,73 @@ export default function DashboardPage() {
   }), { calories: 0, fat_g: 0, protein_g: 0, carbs_g: 0 });
 
   async function handleTap(food) {
+    // Optimistic update: increment serving count immediately so rapid taps feel instant
+    setLogs(prev => {
+      const idx = prev.findIndex(l => l.food_id === food.id);
+      if (idx >= 0) {
+        const updated = [...prev];
+        updated[idx] = { ...updated[idx], servings: updated[idx].servings + 1 };
+        return updated;
+      }
+      return [...prev, {
+        id: `temp-${food.id}-${Date.now()}`,
+        food_id: food.id,
+        servings: 1,
+        name: food.name,
+        serving_description: food.serving_description,
+        calories: food.calories,
+        fat_g: food.fat_g,
+        protein_g: food.protein_g,
+        carbs_g: food.carbs_g,
+        image_url: food.image_url,
+        timestamp: new Date().toISOString(),
+      }];
+    });
+
     setTapping(food.id);
     try {
       const res = await logsApi.add(food.id, today);
       const newLog = res.data;
+      // Sync with server, but never decrease below our optimistic count (protect against race)
       setLogs(prev => {
         const idx = prev.findIndex(l => l.food_id === food.id);
         if (idx >= 0) {
           const updated = [...prev];
-          updated[idx] = newLog;
+          updated[idx] = { ...newLog, servings: Math.max(newLog.servings, updated[idx].servings) };
           return updated;
         }
         return [...prev, newLog];
       });
     } catch (e) {
       console.error(e);
+      // Revert to server state on error
+      logsApi.getDay(today).then(r => setLogs(r.data)).catch(() => {});
     } finally {
       setTapping(null);
     }
   }
 
   async function handleLongPress(food) {
-    // Find log entry for this food
     const log = logs.find(l => l.food_id === food.id);
     if (!log) return;
     try {
       await logsApi.remove(log.id);
-      // Re-fetch logs to get updated servings
       const res = await logsApi.getDay(today);
       setLogs(res.data);
     } catch (e) {
       console.error(e);
+    }
+  }
+
+  async function handleCompleteDay() {
+    setCompleting(true);
+    try {
+      const res = await logsApi.toggleComplete(today);
+      setIsDayCompleted(res.data.completed);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setCompleting(false);
     }
   }
 
@@ -153,8 +193,19 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* Complete Day */}
+        <div className="dash-complete">
+          <button
+            className={`complete-btn ${isDayCompleted ? 'complete-btn--done' : ''}`}
+            onClick={handleCompleteDay}
+            disabled={completing}
+          >
+            {isDayCompleted ? '✓ Day Completed' : 'Complete Day'}
+          </button>
+        </div>
+
         {/* Food Grid */}
-        <div className="dash-section-label">Tap to log food</div>
+        <div className="dash-section-label">Tap to log food · Long-press to remove</div>
         <FoodGrid
           foods={foods}
           logs={logs}

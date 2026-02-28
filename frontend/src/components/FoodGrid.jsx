@@ -34,7 +34,6 @@ function FoodTile({ food, servings, onTap, onLongPress, tapping }) {
       onTouchStart={startPress}
       onTouchEnd={endPress}
       onTouchCancel={endPress}
-      disabled={isActive}
     >
       <div className="food-tile-img-wrap">
         {food.image_url ? (

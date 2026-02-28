@@ -116,6 +116,45 @@
   gap: 12px;
 }
 
+.dash-complete {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.complete-btn {
+  padding: 10px 28px;
+  border-radius: 24px;
+  font-size: 15px;
+  font-weight: 600;
+  background: var(--card);
+  border: 2px solid var(--border);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+
+.complete-btn:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.complete-btn--done {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
+
+.complete-btn--done:hover:not(:disabled) {
+  background: var(--deep-accent);
+  border-color: var(--deep-accent);
+}
+
+.complete-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .dash-section-label {
   font-size: 13px;
   font-weight: 600;

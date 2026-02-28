@@ -22,22 +22,34 @@ router.get('/', (req, res) => {
   res.json(logs);
 });
 
-// Get history - list of dates with totals
+// Get history - list of dates with totals (optionally filtered by month YYYY-MM)
 router.get('/history', (req, res) => {
+  const { month } = req.query;
+
+  const params = [req.user.id, req.user.id];
+  let monthFilter = '';
+
+  if (month) {
+    monthFilter = 'AND dl.date LIKE ?';
+    params.push(`${month}-%`);
+  }
+
   const history = db.prepare(`
     SELECT dl.date,
            SUM(f.calories * dl.servings) as calories,
            SUM(f.fat_g * dl.servings) as fat_g,
            SUM(f.protein_g * dl.servings) as protein_g,
            SUM(f.carbs_g * dl.servings) as carbs_g,
-           COUNT(DISTINCT dl.id) as entries
+           COUNT(DISTINCT dl.id) as entries,
+           CASE WHEN cd.date IS NOT NULL THEN 1 ELSE 0 END as completed
     FROM daily_logs dl
     JOIN foods f ON dl.food_id = f.id
-    WHERE dl.user_id = ?
+    LEFT JOIN completed_days cd ON cd.user_id = ? AND cd.date = dl.date
+    WHERE dl.user_id = ? ${monthFilter}
     GROUP BY dl.date
     ORDER BY dl.date DESC
-    LIMIT 30
-  `).all(req.user.id);
+    ${month ? '' : 'LIMIT 90'}
+  `).all(...params);
 
   res.json(history);
 });
@@ -54,6 +66,28 @@ router.get('/history/:date', (req, res) => {
   `).all(req.user.id, req.params.date);
 
   res.json(logs);
+});
+
+// Toggle a day as complete/incomplete
+router.post('/complete', (req, res) => {
+  const { date } = req.body;
+  const logDate = date || new Date().toISOString().split('T')[0];
+
+  const existing = db.prepare('SELECT id FROM completed_days WHERE user_id = ? AND date = ?').get(req.user.id, logDate);
+
+  if (existing) {
+    db.prepare('DELETE FROM completed_days WHERE user_id = ? AND date = ?').run(req.user.id, logDate);
+    return res.json({ date: logDate, completed: false });
+  }
+
+  db.prepare('INSERT INTO completed_days (user_id, date) VALUES (?, ?)').run(req.user.id, logDate);
+  res.json({ date: logDate, completed: true });
+});
+
+// Get completion status for a specific date
+router.get('/complete/:date', (req, res) => {
+  const row = db.prepare('SELECT id FROM completed_days WHERE user_id = ? AND date = ?').get(req.user.id, req.params.date);
+  res.json({ date: req.params.date, completed: !!row });
 });
 
 // Add food to log (tap)
@@ -90,6 +124,11 @@ router.post('/', (req, res) => {
 });
 
 // Remove one serving or delete entry
+router.delete('/complete/:date', (req, res) => {
+  db.prepare('DELETE FROM completed_days WHERE user_id = ? AND date = ?').run(req.user.id, req.params.date);
+  res.json({ date: req.params.date, completed: false });
+});
+
 router.delete('/:id', (req, res) => {
   const log = db.prepare('SELECT * FROM daily_logs WHERE id = ? AND user_id = ?').get(req.params.id, req.user.id);
   if (!log) return res.status(404).json({ error: 'Log entry not found' });

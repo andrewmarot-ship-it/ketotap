@@ -42,9 +42,12 @@ export const foodsApi = {
 export const logsApi = {
   getDay: (date) => api.get('/logs', { params: { date } }),
   history: () => api.get('/logs/history'),
+  historyMonth: (month) => api.get('/logs/history', { params: { month } }),
   historyDay: (date) => api.get(`/logs/history/${date}`),
   add: (food_id, date) => api.post('/logs', { food_id, date }),
   remove: (id) => api.delete(`/logs/${id}`),
+  toggleComplete: (date) => api.post('/logs/complete', { date }),
+  isCompleted: (date) => api.get(`/logs/complete/${date}`),
 };
 
 export default api;
