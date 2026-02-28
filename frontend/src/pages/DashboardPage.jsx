@@ -205,7 +205,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Food Grid */}
-        <div className="dash-section-label">Tap to log food · Long-press to remove</div>
+        <div className="dash-section-label">Tap to log food</div>
         <FoodGrid
           foods={foods}
           logs={logs}

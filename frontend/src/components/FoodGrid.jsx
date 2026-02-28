@@ -1,40 +1,38 @@
-import { useRef } from 'react';
 import './FoodGrid.css';
 
-const LONG_PRESS_MS = 600;
-
 function FoodTile({ food, servings, onTap, onLongPress, tapping }) {
-  const timerRef = useRef(null);
-  const isActive = tapping === food.id;
-
-  function startPress() {
-    timerRef.current = setTimeout(() => {
-      onLongPress(food);
-    }, LONG_PRESS_MS);
-  }
-
-  function endPress() {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-  }
-
-  function handleClick() {
-    onTap(food);
-  }
+  const isProcessing = tapping === food.id;
 
   return (
-    <button
-      className={`food-tile ${servings > 0 ? 'food-tile--active' : ''} ${isActive ? 'food-tile--tapping' : ''}`}
-      onClick={handleClick}
-      onMouseDown={startPress}
-      onMouseUp={endPress}
-      onMouseLeave={endPress}
-      onTouchStart={startPress}
-      onTouchEnd={endPress}
-      onTouchCancel={endPress}
+    <div
+      className={`food-tile ${servings > 0 ? 'food-tile--active' : ''} ${isProcessing ? 'food-tile--tapping' : ''}`}
+      onClick={() => onTap(food)}
     >
+      {/* Minus — top left, only visible when serving count > 0 */}
+      {servings > 0 && (
+        <button
+          className="tile-adj tile-adj--minus"
+          onClick={e => { e.stopPropagation(); onLongPress(food); }}
+          aria-label="Remove serving"
+        >
+          −
+        </button>
+      )}
+
+      {/* Plus — top right, always visible */}
+      <button
+        className="tile-adj tile-adj--plus"
+        onClick={e => { e.stopPropagation(); onTap(food); }}
+        aria-label="Add serving"
+      >
+        +
+      </button>
+
+      {/* Serving count — centered between the two buttons */}
+      {servings > 0 && (
+        <div className="food-tile-count">×{servings}</div>
+      )}
+
       <div className="food-tile-img-wrap">
         {food.image_url ? (
           <img
@@ -52,15 +50,7 @@ function FoodTile({ food, servings, onTap, onLongPress, tapping }) {
         <span className="food-tile-serving">{food.serving_description}</span>
         <span className="food-tile-cals">{food.calories} kcal</span>
       </div>
-
-      {servings > 0 && (
-        <div className="food-tile-badge">{servings}</div>
-      )}
-
-      {isActive && (
-        <div className="food-tile-overlay">+1</div>
-      )}
-    </button>
+    </div>
   );
 }
 
