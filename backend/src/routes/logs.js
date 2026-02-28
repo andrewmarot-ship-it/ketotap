@@ -105,7 +105,7 @@ router.post('/', (req, res) => {
 
   let logId;
   if (existing) {
-    db.prepare('UPDATE daily_logs SET servings = servings + ?, timestamp = datetime("now") WHERE id = ?').run(parseInt(servings), existing.id);
+    db.prepare(`UPDATE daily_logs SET servings = servings + ?, timestamp = datetime('now') WHERE id = ?`).run(parseInt(servings), existing.id);
     logId = existing.id;
   } else {
     const result = db.prepare('INSERT INTO daily_logs (user_id, date, food_id, servings) VALUES (?, ?, ?, ?)').run(req.user.id, logDate, food_id, parseInt(servings));
