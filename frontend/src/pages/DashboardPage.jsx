@@ -83,9 +83,11 @@ export default function DashboardPage() {
       setLogs(prev => {
         const idx = prev.findIndex(l => l.food_id === food.id);
         if (idx < 0) return [...prev, serverLog];
-        if (serverLog.servings <= prev[idx].servings) return prev;
         const updated = [...prev];
-        updated[idx] = serverLog;
+        // Always replace with server entry to get the real DB id.
+        // Keep whichever servings count is higher (rapid taps may have
+        // already optimistically incremented beyond what this response knows).
+        updated[idx] = { ...serverLog, servings: Math.max(serverLog.servings, prev[idx].servings) };
         return updated;
       });
     } catch (e) {
