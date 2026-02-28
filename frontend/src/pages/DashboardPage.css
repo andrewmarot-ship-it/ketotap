@@ -82,7 +82,7 @@
 }
 
 .nav-logout:hover {
-  background: #fef2f2;
+  background: #2A1818;
 }
 
 /* Main */
@@ -101,19 +101,13 @@
   font-weight: 500;
 }
 
-/* Macro Summary */
-.macro-summary {
-  margin-bottom: 20px;
-}
-
-.macro-row {
+/* Macro rings */
+.macro-rings {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 14px 8px;
   margin-bottom: 16px;
-}
-
-.macro-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 12px;
 }
 
 .dash-complete {

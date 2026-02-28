@@ -25,31 +25,31 @@
   align-items: center;
   background: var(--card);
   border-radius: 16px;
-  padding: 32px 8px 12px;
+  padding: 50px 8px 12px;
   border: 2px solid transparent;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
   transition: border-color 0.15s, background 0.15s;
   text-align: center;
   gap: 6px;
   width: 100%;
-  min-height: 140px;
+  min-height: 150px;
   user-select: none;
 }
 
 .food-tile--active {
   border-color: var(--primary);
-  background: #f0fdf4;
+  background: #162820;
 }
 
 /* +/− corner buttons */
 .tile-adj {
   position: absolute;
-  top: 6px;
-  width: 24px;
-  height: 24px;
+  top: 7px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   border: none;
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 700;
   line-height: 1;
   display: flex;
@@ -66,13 +66,13 @@
 }
 
 .tile-adj--plus {
-  right: 6px;
+  right: 7px;
   background: var(--primary);
   color: white;
 }
 
 .tile-adj--minus {
-  left: 6px;
+  left: 7px;
   background: var(--over-limit);
   color: white;
 }
@@ -80,7 +80,7 @@
 /* Serving count shown between buttons */
 .food-tile-count {
   position: absolute;
-  top: 9px;
+  top: 17px;
   left: 50%;
   transform: translateX(-50%);
   font-size: 11px;

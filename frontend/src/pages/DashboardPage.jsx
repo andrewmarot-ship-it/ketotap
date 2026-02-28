@@ -120,42 +120,11 @@ export default function DashboardPage() {
         </div>
 
         {targets && (
-          <div className="macro-summary card">
-            <div className="macro-row">
-              <MacroBar
-                label="Calories"
-                current={Math.round(totals.calories)}
-                target={targets.calories}
-                unit="kcal"
-                color="var(--primary)"
-              />
-            </div>
-            <div className="macro-grid">
-              <MacroBar
-                label="Fat"
-                current={Math.round(totals.fat_g)}
-                target={targets.fat_g}
-                unit="g"
-                color="#F39C12"
-                small
-              />
-              <MacroBar
-                label="Protein"
-                current={Math.round(totals.protein_g)}
-                target={targets.protein_g}
-                unit="g"
-                color="#3498DB"
-                small
-              />
-              <MacroBar
-                label="Net Carbs"
-                current={Math.round(totals.carbs_g)}
-                target={targets.carbs_g}
-                unit="g"
-                color={totals.carbs_g > targets.carbs_g ? 'var(--over-limit)' : totals.carbs_g > targets.carbs_g * 0.8 ? 'var(--warning)' : 'var(--primary)'}
-                small
-              />
-            </div>
+          <div className="macro-rings card">
+            <MacroBar label="Cal" current={Math.round(totals.calories)} target={targets.calories} unit="" color="var(--primary)" size={72} />
+            <MacroBar label="Fat" current={Math.round(totals.fat_g)} target={targets.fat_g} unit="g" color="#F39C12" size={60} />
+            <MacroBar label="Prot" current={Math.round(totals.protein_g)} target={targets.protein_g} unit="g" color="#3498DB" size={60} />
+            <MacroBar label="Carbs" current={Math.round(totals.carbs_g)} target={targets.carbs_g} unit="g" color={totals.carbs_g > targets.carbs_g ? 'var(--over-limit)' : totals.carbs_g > targets.carbs_g * 0.8 ? 'var(--warning)' : 'var(--primary)'} size={60} />
           </div>
         )}
 

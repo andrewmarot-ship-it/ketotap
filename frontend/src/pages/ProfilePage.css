@@ -29,7 +29,7 @@
   color: var(--over-limit);
   background: transparent;
 }
-.nav-logout:hover { background: #fef2f2; }
+.nav-logout:hover { background: #2A1818; }
 
 .profile-content {
   max-width: 500px;
@@ -114,8 +114,8 @@
 }
 
 .profile-tip {
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
+  background: #162820;
+  border: 1px solid #1E3525;
 }
 
 .profile-tip h3 {
