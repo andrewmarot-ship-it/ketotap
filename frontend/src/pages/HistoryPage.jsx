@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import {
+  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
+} from 'recharts';
 import { logsApi } from '../api/client';
 import './HistoryPage.css';
 
@@ -7,6 +10,13 @@ const WEEK_DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',
+];
+
+const MACRO_CONFIG = [
+  { key: 'calories', label: 'Calories', color: '#E74C3C' },
+  { key: 'fat_g',    label: 'Fat (g)',  color: '#F39C12' },
+  { key: 'protein_g', label: 'Protein (g)', color: '#2ECC71' },
+  { key: 'carbs_g',  label: 'Carbs (g)', color: '#3498DB' },
 ];
 
 function Calendar({ year, month, dayData, selectedDate, onSelectDate }) {
@@ -62,6 +72,75 @@ function Calendar({ year, month, dayData, selectedDate, onSelectDate }) {
   );
 }
 
+function MacroChart({ dayData, visibleMacros, onToggleMacro }) {
+  const chartData = Object.entries(dayData)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, d]) => ({
+      day: parseInt(date.slice(8), 10),
+      calories: Math.round(d.calories),
+      fat_g: Math.round(d.fat_g),
+      protein_g: Math.round(d.protein_g),
+      carbs_g: Math.round(d.carbs_g),
+    }));
+
+  if (chartData.length === 0) {
+    return <p className="history-empty">No data this month to chart.</p>;
+  }
+
+  return (
+    <div className="chart-section">
+      <div className="macro-toggles">
+        {MACRO_CONFIG.map(({ key, label, color }) => (
+          <button
+            key={key}
+            className={`macro-toggle-btn ${visibleMacros[key] ? 'active' : ''}`}
+            style={{ '--toggle-color': color }}
+            onClick={() => onToggleMacro(key)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <div className="chart-container">
+        <ResponsiveContainer width="100%" height={240}>
+          <LineChart data={chartData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+            <XAxis
+              dataKey="day"
+              tick={{ fontSize: 11, fill: '#888' }}
+              tickLine={false}
+              axisLine={false}
+            />
+            <YAxis
+              tick={{ fontSize: 11, fill: '#888' }}
+              tickLine={false}
+              axisLine={false}
+              width={48}
+            />
+            <Tooltip
+              contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e0e0e0' }}
+              labelFormatter={day => `Day ${day}`}
+            />
+            {MACRO_CONFIG.map(({ key, label, color }) =>
+              visibleMacros[key] ? (
+                <Line
+                  key={key}
+                  type="monotone"
+                  dataKey={key}
+                  name={label}
+                  stroke={color}
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 4 }}
+                />
+              ) : null
+            )}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
 export default function HistoryPage() {
   const now = new Date();
   const [currentYear, setCurrentYear] = useState(now.getFullYear());
@@ -72,6 +151,11 @@ export default function HistoryPage() {
   const [selected, setSelected] = useState(null);
   const [detail, setDetail] = useState([]);
   const [detailLoading, setDetailLoading] = useState(false);
+
+  const [tab, setTab] = useState('calendar');
+  const [visibleMacros, setVisibleMacros] = useState({
+    calories: true, fat_g: true, protein_g: true, carbs_g: true,
+  });
 
   // Load data whenever the viewed month changes
   useEffect(() => {
@@ -126,6 +210,10 @@ export default function HistoryPage() {
     return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   }
 
+  function toggleMacro(key) {
+    setVisibleMacros(prev => ({ ...prev, [key]: !prev[key] }));
+  }
+
   const isCurrentMonth = currentYear === now.getFullYear() && currentMonth === now.getMonth();
   const hasDayData = Object.keys(dayData).length > 0;
 
@@ -153,38 +241,71 @@ export default function HistoryPage() {
           </button>
         </div>
 
-        {/* Calendar */}
-        <div className="cal-wrap card">
-          {monthLoading ? (
-            <div className="history-loading">Loading…</div>
-          ) : (
-            <>
-              {!hasDayData && (
-                <div className="cal-empty-msg">No logs this month</div>
-              )}
-              <Calendar
-                year={currentYear}
-                month={currentMonth}
-                dayData={dayData}
-                selectedDate={selected}
-                onSelectDate={handleSelectDate}
-              />
-              <div className="cal-legend">
-                <span className="cal-legend-item">
-                  <span className="cal-legend-dot" />
-                  Logged
-                </span>
-                <span className="cal-legend-item">
-                  <span className="cal-legend-check">✓</span>
-                  Completed
-                </span>
-              </div>
-            </>
-          )}
+        {/* Tab switcher */}
+        <div className="history-tabs">
+          <button
+            className={`tab-btn ${tab === 'calendar' ? 'active' : ''}`}
+            onClick={() => setTab('calendar')}
+          >
+            Calendar
+          </button>
+          <button
+            className={`tab-btn ${tab === 'chart' ? 'active' : ''}`}
+            onClick={() => setTab('chart')}
+          >
+            Chart
+          </button>
         </div>
 
-        {/* Day detail panel */}
-        {selected && (
+        {/* Calendar tab */}
+        {tab === 'calendar' && (
+          <div className="cal-wrap card">
+            {monthLoading ? (
+              <div className="history-loading">Loading…</div>
+            ) : (
+              <>
+                {!hasDayData && (
+                  <div className="cal-empty-msg">No logs this month</div>
+                )}
+                <Calendar
+                  year={currentYear}
+                  month={currentMonth}
+                  dayData={dayData}
+                  selectedDate={selected}
+                  onSelectDate={handleSelectDate}
+                />
+                <div className="cal-legend">
+                  <span className="cal-legend-item">
+                    <span className="cal-legend-dot" />
+                    Logged
+                  </span>
+                  <span className="cal-legend-item">
+                    <span className="cal-legend-check">✓</span>
+                    Completed
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Chart tab */}
+        {tab === 'chart' && (
+          <div className="cal-wrap card">
+            {monthLoading ? (
+              <div className="history-loading">Loading…</div>
+            ) : (
+              <MacroChart
+                dayData={dayData}
+                visibleMacros={visibleMacros}
+                onToggleMacro={toggleMacro}
+              />
+            )}
+          </div>
+        )}
+
+        {/* Day detail panel (calendar tab only) */}
+        {tab === 'calendar' && selected && (
           <div className="history-detail card">
             <div className="detail-header">
               <h3>{formatDate(selected)}</h3>

@@ -210,6 +210,68 @@
   font-weight: 700;
 }
 
+/* ── Tabs ── */
+.history-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 0 2px;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 10px 0;
+  border-radius: 10px;
+  border: 2px solid var(--border);
+  background: var(--card);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.tab-btn.active {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: rgba(46, 204, 113, 0.08);
+}
+
+/* ── Chart ── */
+.chart-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.macro-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 4px;
+}
+
+.macro-toggle-btn {
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 2px solid var(--toggle-color, #ccc);
+  background: transparent;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.macro-toggle-btn.active {
+  background: var(--toggle-color, #ccc);
+  color: #fff;
+}
+
+.chart-container {
+  padding: 4px 0 8px;
+  overflow: hidden;
+}
+
 /* ── Detail panel ── */
 .history-detail {
   margin-top: 0;
