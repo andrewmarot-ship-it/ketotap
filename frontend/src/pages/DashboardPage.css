@@ -157,3 +157,46 @@
   letter-spacing: 0.5px;
   margin-bottom: 12px;
 }
+
+/* Smart suggestion banner */
+.smart-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #162820;
+  border: 1px solid var(--primary);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+
+.smart-banner--over {
+  background: #2A1818;
+  border-color: var(--over-limit);
+}
+
+.smart-banner-icon {
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.smart-banner-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.smart-banner-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.smart-banner--over .smart-banner-title {
+  color: var(--over-limit);
+}
+
+.smart-banner-sub {
+  font-size: 12px;
+  color: var(--text-secondary);
+}

@@ -41,6 +41,22 @@
   background: #162820;
 }
 
+/* Suggested — glowing green border */
+.food-tile--suggested {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(46, 204, 113, 0.25), 0 0 16px rgba(46, 204, 113, 0.15);
+}
+
+/* Blocked — over calorie budget */
+.food-tile--blocked {
+  opacity: 0.3;
+  filter: grayscale(60%);
+}
+
+.food-tile--blocked .tile-adj--plus {
+  pointer-events: none;
+}
+
 /* +/− corner buttons */
 .tile-adj {
   position: absolute;

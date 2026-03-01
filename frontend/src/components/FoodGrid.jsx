@@ -1,8 +1,15 @@
 import './FoodGrid.css';
 
-function FoodTile({ food, servings, onAdd, onRemove }) {
+function FoodTile({ food, servings, onAdd, onRemove, suggested, blocked }) {
+  const tileClass = [
+    'food-tile',
+    servings > 0 ? 'food-tile--active' : '',
+    suggested ? 'food-tile--suggested' : '',
+    blocked ? 'food-tile--blocked' : '',
+  ].filter(Boolean).join(' ');
+
   return (
-    <div className={`food-tile ${servings > 0 ? 'food-tile--active' : ''}`}>
+    <div className={tileClass}>
 
       {/* Minus — top-left, only when a serving has been logged */}
       {servings > 0 && (
@@ -15,11 +22,12 @@ function FoodTile({ food, servings, onAdd, onRemove }) {
         </button>
       )}
 
-      {/* Plus — top-right, always visible */}
+      {/* Plus — disabled when food would exceed calorie budget */}
       <button
         className="tile-adj tile-adj--plus"
-        onClick={() => onAdd(food)}
+        onClick={() => !blocked && onAdd(food)}
         aria-label="Add serving"
+        aria-disabled={blocked}
       >
         +
       </button>
@@ -56,7 +64,7 @@ function FoodTile({ food, servings, onAdd, onRemove }) {
   );
 }
 
-export default function FoodGrid({ foods, logs, onAdd, onRemove }) {
+export default function FoodGrid({ foods, logs, onAdd, onRemove, recommendedIds = new Set(), blockedIds = new Set() }) {
   const servingsMap = {};
   for (const log of logs) {
     servingsMap[log.food_id] = log.servings;
@@ -80,6 +88,8 @@ export default function FoodGrid({ foods, logs, onAdd, onRemove }) {
           servings={servingsMap[food.id] || 0}
           onAdd={onAdd}
           onRemove={onRemove}
+          suggested={recommendedIds.has(food.id)}
+          blocked={blockedIds.has(food.id)}
         />
       ))}
     </div>

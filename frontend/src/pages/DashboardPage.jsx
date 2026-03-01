@@ -50,6 +50,35 @@ export default function DashboardPage() {
     carbs_g: acc.carbs_g + log.carbs_g * log.servings,
   }), { calories: 0, fat_g: 0, protein_g: 0, carbs_g: 0 });
 
+  // Smart suggestions — activate within 15% of calorie target
+  const SUGGESTION_THRESHOLD = 0.85;
+  const pctUsed = targets ? totals.calories / targets.calories : 0;
+  const suggestionsActive = targets && pctUsed >= SUGGESTION_THRESHOLD;
+  const overTarget = targets && pctUsed >= 1;
+  const remainingCal = targets ? Math.max(0, targets.calories - totals.calories) : 0;
+
+  let recommendedIds = new Set();
+  let blockedIds = new Set();
+
+  if (suggestionsActive && foods.length > 0) {
+    const remainingFat = Math.max(0, targets.fat_g - totals.fat_g);
+    const remainingProtein = Math.max(0, targets.protein_g - totals.protein_g);
+
+    const scored = foods
+      .filter(f => f.calories <= remainingCal)
+      .map(f => {
+        // Keto weighting: fat counts 2×, protein 1×
+        const fatScore = remainingFat > 0 ? Math.min(f.fat_g / remainingFat, 1) : 0;
+        const proteinScore = remainingProtein > 0 ? Math.min(f.protein_g / remainingProtein, 1) : 0;
+        return { id: f.id, score: fatScore * 2 + proteinScore };
+      })
+      .filter(f => f.score > 0.1)
+      .sort((a, b) => b.score - a.score);
+
+    recommendedIds = new Set(scored.slice(0, 3).map(f => f.id));
+    blockedIds = new Set(foods.filter(f => f.calories > remainingCal).map(f => f.id));
+  }
+
   async function handleAdd(food) {
     try {
       await logsApi.add(food.id, today);
@@ -138,12 +167,30 @@ export default function DashboardPage() {
           </button>
         </div>
 
+        {suggestionsActive && (
+          <div className={`smart-banner ${overTarget ? 'smart-banner--over' : ''}`}>
+            <div className="smart-banner-icon">{overTarget ? '🎉' : '🎯'}</div>
+            <div className="smart-banner-body">
+              <span className="smart-banner-title">
+                {overTarget ? 'Calorie goal reached!' : `${Math.round(remainingCal)} kcal remaining`}
+              </span>
+              <span className="smart-banner-sub">
+                {overTarget
+                  ? 'Foods are locked to protect your goal'
+                  : 'Glowing items fit your budget · greyed items would overshoot'}
+              </span>
+            </div>
+          </div>
+        )}
+
         <div className="dash-section-label">Tap + to log · − to remove</div>
         <FoodGrid
           foods={foods}
           logs={logs}
           onAdd={handleAdd}
           onRemove={handleRemove}
+          recommendedIds={recommendedIds}
+          blockedIds={blockedIds}
         />
       </main>
     </div>
