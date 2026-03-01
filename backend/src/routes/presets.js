@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const auth = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
+
+router.use(authMiddleware);
 
 const ITEMS_QUERY = `
   SELECT pi.id, pi.food_id, pi.servings,
@@ -14,7 +16,7 @@ const ITEMS_QUERY = `
 `;
 
 // GET /api/presets — list user's presets with items
-router.get('/', auth, (req, res) => {
+router.get('/', (req, res) => {
   const presets = db.prepare(`
     SELECT id, name, emoji, created_at
     FROM meal_presets
@@ -30,7 +32,7 @@ router.get('/', auth, (req, res) => {
 });
 
 // POST /api/presets — create a preset
-router.post('/', auth, (req, res) => {
+router.post('/', (req, res) => {
   const { name, emoji, items } = req.body;
   if (!name || !Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ error: 'name and at least one item required' });
@@ -60,7 +62,7 @@ router.post('/', auth, (req, res) => {
 });
 
 // DELETE /api/presets/:id
-router.delete('/:id', auth, (req, res) => {
+router.delete('/:id', (req, res) => {
   const preset = db.prepare(
     `SELECT id FROM meal_presets WHERE id = ? AND user_id = ?`
   ).get(req.params.id, req.user.id);
@@ -71,7 +73,7 @@ router.delete('/:id', auth, (req, res) => {
 });
 
 // POST /api/presets/:id/log — log all preset items for today (or given date)
-router.post('/:id/log', auth, (req, res) => {
+router.post('/:id/log', (req, res) => {
   const preset = db.prepare(
     `SELECT id FROM meal_presets WHERE id = ? AND user_id = ?`
   ).get(req.params.id, req.user.id);
