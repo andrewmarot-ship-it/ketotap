@@ -147,7 +147,7 @@ export default function DashboardPage() {
       <header className="dash-header">
         <div className="dash-header-inner">
           <div className="dash-brand">
-            <span className="dash-icon">🥑</span>
+            <span className="dash-icon">⚡🥑</span>
             <span className="dash-title">KetoTap</span>
           </div>
           <nav className="dash-nav">

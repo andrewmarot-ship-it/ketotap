@@ -28,7 +28,7 @@ export default function LoginPage() {
   return (
     <div className="auth-page">
       <div className="auth-logo">
-        <div className="auth-icon">🥑</div>
+        <div className="auth-icon">⚡🥑</div>
         <h1 className="auth-brand">KetoTap</h1>
         <p className="auth-tagline">Tap. Track. Keto.</p>
       </div>

@@ -55,7 +55,7 @@ export default function ProfilePage() {
 
       <div className="profile-content">
         <div className="profile-card card">
-          <div className="profile-avatar">🥑</div>
+          <div className="profile-avatar">⚡🥑</div>
           <div className="profile-email">{user?.email}</div>
         </div>
 
