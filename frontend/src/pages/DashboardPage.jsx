@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { targetsApi, foodsApi, logsApi } from '../api/client';
+import { targetsApi, foodsApi, logsApi, presetsApi } from '../api/client';
 import MacroBar from '../components/MacroBar';
 import FoodGrid from '../components/FoodGrid';
+import PresetsRow from '../components/PresetsRow';
+import PresetModal from '../components/PresetModal';
 import './DashboardPage.css';
 
 function todayStr() {
@@ -18,21 +20,25 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [isDayCompleted, setIsDayCompleted] = useState(false);
   const [completing, setCompleting] = useState(false);
+  const [presets, setPresets] = useState([]);
+  const [showPresetModal, setShowPresetModal] = useState(false);
 
   const today = todayStr();
 
   const loadData = useCallback(async () => {
     try {
-      const [tRes, fRes, lRes, cRes] = await Promise.all([
+      const [tRes, fRes, lRes, cRes, pRes] = await Promise.all([
         targetsApi.get(),
         foodsApi.list(),
         logsApi.getDay(today),
         logsApi.isCompleted(today),
+        presetsApi.list(),
       ]);
       setTargets(tRes.data);
       setFoods(fRes.data);
       setLogs(lRes.data);
       setIsDayCompleted(cRes.data.completed);
+      setPresets(pRes.data);
     } catch (e) {
       console.error(e);
     } finally {
@@ -101,6 +107,16 @@ export default function DashboardPage() {
     try {
       await logsApi.remove(log.id);
       // Re-fetch to get authoritative counts after the removal
+      const res = await logsApi.getDay(today);
+      setLogs(res.data);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async function handlePresetLog(preset) {
+    try {
+      await presetsApi.log(preset.id, today);
       const res = await logsApi.getDay(today);
       setLogs(res.data);
     } catch (e) {
@@ -183,6 +199,17 @@ export default function DashboardPage() {
           </div>
         )}
 
+        <div className="presets-section">
+          <div className="presets-section-header">
+            <span className="dash-section-label" style={{ marginBottom: 0 }}>Presets</span>
+          </div>
+          <PresetsRow
+            presets={presets}
+            onLog={handlePresetLog}
+            onManage={() => setShowPresetModal(true)}
+          />
+        </div>
+
         <div className="dash-section-label">Tap + to log · − to remove</div>
         <FoodGrid
           foods={foods}
@@ -193,6 +220,15 @@ export default function DashboardPage() {
           blockedIds={blockedIds}
         />
       </main>
+
+      <PresetModal
+        isOpen={showPresetModal}
+        onClose={() => setShowPresetModal(false)}
+        foods={foods}
+        todayLogs={logs}
+        presets={presets}
+        onPresetsChange={setPresets}
+      />
     </div>
   );
 }

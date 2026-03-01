@@ -50,4 +50,11 @@ export const logsApi = {
   isCompleted: (date) => api.get(`/logs/complete/${date}`),
 };
 
+export const presetsApi = {
+  list: () => api.get('/presets'),
+  create: (preset) => api.post('/presets', preset),
+  delete: (id) => api.delete(`/presets/${id}`),
+  log: (id, date) => api.post(`/presets/${id}/log`, { date }),
+};
+
 export default api;

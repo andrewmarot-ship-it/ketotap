@@ -62,6 +62,24 @@ db.exec(`
     UNIQUE(user_id, date),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
   );
+
+  CREATE TABLE IF NOT EXISTS meal_presets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    emoji TEXT NOT NULL DEFAULT '🍱',
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS meal_preset_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    preset_id INTEGER NOT NULL,
+    food_id INTEGER NOT NULL,
+    servings INTEGER NOT NULL DEFAULT 1,
+    FOREIGN KEY (preset_id) REFERENCES meal_presets(id) ON DELETE CASCADE,
+    FOREIGN KEY (food_id) REFERENCES foods(id) ON DELETE CASCADE
+  );
 `);
 
 // Add emoji column if it doesn't exist yet (safe to run every startup)
