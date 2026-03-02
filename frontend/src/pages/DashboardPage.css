@@ -82,7 +82,7 @@
 }
 
 .nav-logout:hover {
-  background: #2A1818;
+  background: var(--danger-bg);
 }
 
 /* Main */
@@ -163,7 +163,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  background: #162820;
+  background: var(--card-hover);
   border: 1px solid var(--primary);
   border-radius: 14px;
   padding: 12px 14px;
@@ -171,7 +171,7 @@
 }
 
 .smart-banner--over {
-  background: #2A1818;
+  background: var(--danger-bg);
   border-color: var(--over-limit);
 }
 

@@ -147,7 +147,7 @@
 }
 
 .pm-delete-btn:hover:not(:disabled) {
-  background: #2A1818;
+  background: var(--danger-bg);
 }
 
 .pm-delete-btn:disabled {
@@ -223,7 +223,7 @@
 }
 
 .pm-error {
-  background: #2A1818;
+  background: var(--danger-bg);
   border: 1px solid var(--over-limit);
   border-radius: 10px;
   padding: 8px 12px;
@@ -284,12 +284,12 @@
 
 .pm-emoji-opt:hover {
   border-color: var(--primary);
-  background: #162820;
+  background: var(--card-hover);
 }
 
 .pm-emoji-opt--active {
   border-color: var(--primary);
-  background: #162820;
+  background: var(--card-hover);
 }
 
 .pm-macro-preview {
@@ -299,7 +299,7 @@
   font-size: 12px;
   color: var(--primary-dark);
   font-weight: 600;
-  background: #162820;
+  background: var(--card-hover);
   border: 1px solid var(--primary);
   border-radius: 10px;
   padding: 8px 12px;
@@ -327,7 +327,7 @@
 }
 
 .pm-import-btn:hover {
-  background: #162820;
+  background: var(--card-hover);
 }
 
 .pm-food-list {
@@ -349,7 +349,7 @@
 
 .pm-food-row--active {
   border-color: var(--primary);
-  background: #162820;
+  background: var(--card-hover);
 }
 
 .pm-food-check {

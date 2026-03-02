@@ -1,14 +1,16 @@
 :root {
   --primary: #2ECC71;
   --primary-dark: #27AE60;
-  --deep-accent: #52D98A;
+  --deep-accent: #1E6B3A;
   --warning: #F39C12;
   --over-limit: #E74C3C;
-  --bg: #0E1210;
-  --card: #172019;
-  --text-primary: #DFE9DF;
-  --text-secondary: #6B8568;
-  --border: #253025;
+  --bg: #F0F7F2;
+  --card: #FFFFFF;
+  --text-primary: #1A2E1E;
+  --text-secondary: #5A7A5E;
+  --border: #C8E6CC;
+  --card-hover: #E8F5EC;
+  --danger-bg: #FDECEA;
 }
 
 * {
@@ -77,7 +79,7 @@ a:hover {
   width: 100%;
   transition: background 0.15s, transform 0.1s;
 }
-.btn-secondary:hover { background: #162820; }
+.btn-secondary:hover { background: var(--card-hover); }
 .btn-secondary:active { transform: scale(0.98); }
 
 .btn-danger {
@@ -108,7 +110,7 @@ a:hover {
   background: var(--card);
   border-radius: 16px;
   padding: 20px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 
 .error-msg {

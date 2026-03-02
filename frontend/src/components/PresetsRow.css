@@ -68,7 +68,7 @@
 
 .preset-pill:hover {
   border-color: var(--primary);
-  background: #162820;
+  background: var(--card-hover);
 }
 
 .preset-pill:active {

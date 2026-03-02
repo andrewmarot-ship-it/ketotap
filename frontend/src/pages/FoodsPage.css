@@ -129,7 +129,7 @@
   border: 1px solid var(--border);
   transition: background 0.15s;
 }
-.btn-edit:hover { background: #e8e8e8; }
+.btn-edit:hover { background: var(--card-hover); }
 
 /* Modal */
 .modal-overlay {

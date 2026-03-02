@@ -38,7 +38,7 @@
 
 .food-tile--active {
   border-color: var(--primary);
-  background: #162820;
+  background: var(--card-hover);
 }
 
 /* Suggested — glowing green border */

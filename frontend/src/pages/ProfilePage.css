@@ -29,7 +29,7 @@
   color: var(--over-limit);
   background: transparent;
 }
-.nav-logout:hover { background: #2A1818; }
+.nav-logout:hover { background: var(--danger-bg); }
 
 .profile-content {
   max-width: 500px;
@@ -114,8 +114,8 @@
 }
 
 .profile-tip {
-  background: #162820;
-  border: 1px solid #1E3525;
+  background: var(--card-hover);
+  border: 1px solid var(--border);
 }
 
 .profile-tip h3 {
