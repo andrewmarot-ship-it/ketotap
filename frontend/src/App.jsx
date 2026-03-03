@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import BetaGatePage from './pages/BetaGatePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
@@ -7,6 +9,25 @@ import DashboardPage from './pages/DashboardPage';
 import FoodsPage from './pages/FoodsPage';
 import HistoryPage from './pages/HistoryPage';
 import ProfilePage from './pages/ProfilePage';
+
+function BetaGate({ children }) {
+  const [hasAccess, setHasAccess] = useState(
+    () => localStorage.getItem('kt_beta') === 'true'
+  );
+
+  if (!hasAccess) {
+    return (
+      <BetaGatePage
+        onAccess={() => {
+          localStorage.setItem('kt_beta', 'true');
+          setHasAccess(true);
+        }}
+      />
+    );
+  }
+
+  return children;
+}
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
@@ -37,10 +58,12 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
-    </AuthProvider>
+    <BetaGate>
+      <AuthProvider>
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </AuthProvider>
+    </BetaGate>
   );
 }
