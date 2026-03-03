@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { targetsApi } from '../api/client';
+import BottomNav from '../components/BottomNav';
 import './ProfilePage.css';
 
 export default function ProfilePage() {
@@ -48,7 +48,6 @@ export default function ProfilePage() {
   return (
     <div className="profile-page">
       <header className="profile-header">
-        <Link to="/" className="back-link">← Dashboard</Link>
         <h1>Profile</h1>
         <button className="nav-logout" onClick={logout}>Logout</button>
       </header>
@@ -151,6 +150,8 @@ export default function ProfilePage() {
           </ul>
         </div>
       </div>
+
+      <BottomNav />
     </div>
   );
 }

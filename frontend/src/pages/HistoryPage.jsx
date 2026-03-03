@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
 import { logsApi } from '../api/client';
+import BottomNav from '../components/BottomNav';
 import './HistoryPage.css';
 
 const WEEK_DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
@@ -220,9 +220,7 @@ export default function HistoryPage() {
   return (
     <div className="history-page">
       <header className="history-header">
-        <Link to="/" className="back-link">← Dashboard</Link>
         <h1>History</h1>
-        <div />
       </header>
 
       <div className="history-content">
@@ -347,6 +345,8 @@ export default function HistoryPage() {
           </div>
         )}
       </div>
+
+      <BottomNav />
     </div>
   );
 }

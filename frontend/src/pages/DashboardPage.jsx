@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { targetsApi, foodsApi, logsApi, presetsApi } from '../api/client';
 import MacroBar from '../components/MacroBar';
 import FoodGrid from '../components/FoodGrid';
 import PresetsRow from '../components/PresetsRow';
 import PresetModal from '../components/PresetModal';
+import BottomNav from '../components/BottomNav';
 import './DashboardPage.css';
 
 function todayStr() {
@@ -150,12 +150,6 @@ export default function DashboardPage() {
             <span className="dash-icon">⚡🥑</span>
             <span className="dash-title">KetoTap</span>
           </div>
-          <nav className="dash-nav">
-            <Link to="/history" className="nav-link">History</Link>
-            <Link to="/foods" className="nav-link">Foods</Link>
-            <Link to="/profile" className="nav-link">Profile</Link>
-            <button className="nav-logout" onClick={logout}>Logout</button>
-          </nav>
         </div>
       </header>
 
@@ -229,6 +223,8 @@ export default function DashboardPage() {
         presets={presets}
         onPresetsChange={setPresets}
       />
+
+      <BottomNav />
     </div>
   );
 }

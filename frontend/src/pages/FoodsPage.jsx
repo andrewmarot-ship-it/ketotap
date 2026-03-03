@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { foodsApi } from '../api/client';
+import BottomNav from '../components/BottomNav';
 import './FoodsPage.css';
 
 const EMPTY_FOOD = { name: '', serving_description: '', calories: '', fat_g: '', protein_g: '', carbs_g: '', image_url: '' };
@@ -99,7 +99,6 @@ export default function FoodsPage() {
   return (
     <div className="foods-page">
       <header className="foods-header">
-        <Link to="/" className="back-link">← Dashboard</Link>
         <h1>Food Inventory</h1>
         <button className="btn-add" onClick={openNew}>+ Add Food</button>
       </header>
@@ -214,6 +213,8 @@ export default function FoodsPage() {
           </div>
         </div>
       )}
+
+      <BottomNav />
     </div>
   );
 }
