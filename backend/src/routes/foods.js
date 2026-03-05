@@ -8,7 +8,7 @@ router.use(authMiddleware);
 
 // Get all foods
 router.get('/', (req, res) => {
-  const foods = db.prepare('SELECT * FROM foods ORDER BY name ASC').all();
+  const foods = db.prepare('SELECT * FROM foods WHERE created_by_user_id = ? ORDER BY name ASC').all(req.user.id);
   res.json(foods);
 });
 
@@ -37,8 +37,8 @@ router.post('/', (req, res) => {
 
 // Update food
 router.put('/:id', (req, res) => {
-  const food = db.prepare('SELECT * FROM foods WHERE id = ?').get(req.params.id);
-  if (!food) return res.status(404).json({ error: 'Food not found' });
+  const food = db.prepare('SELECT * FROM foods WHERE id = ? AND created_by_user_id = ?').get(req.params.id, req.user.id);
+  if (!food) return res.status(403).json({ error: 'Food not found or access denied' });
 
   const { name, serving_description, calories, fat_g, protein_g, carbs_g, image_url } = req.body;
 
@@ -70,8 +70,8 @@ router.put('/:id', (req, res) => {
 
 // Delete food
 router.delete('/:id', (req, res) => {
-  const food = db.prepare('SELECT * FROM foods WHERE id = ?').get(req.params.id);
-  if (!food) return res.status(404).json({ error: 'Food not found' });
+  const food = db.prepare('SELECT * FROM foods WHERE id = ? AND created_by_user_id = ?').get(req.params.id, req.user.id);
+  if (!food) return res.status(403).json({ error: 'Food not found or access denied' });
 
   db.prepare('DELETE FROM foods WHERE id = ?').run(req.params.id);
   res.json({ message: 'Food deleted' });

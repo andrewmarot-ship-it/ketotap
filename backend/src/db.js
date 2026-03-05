@@ -144,4 +144,16 @@ const replaceSeeds = db.transaction((foods) => {
 });
 replaceSeeds(seedFoods);
 
+// Copy seed foods to any existing user who doesn't have a personal copy yet
+db.prepare(`
+  INSERT INTO foods (name, serving_description, calories, fat_g, protein_g, carbs_g, emoji, image_url, created_by_user_id)
+  SELECT f.name, f.serving_description, f.calories, f.fat_g, f.protein_g, f.carbs_g, f.emoji, f.image_url, u.id
+  FROM users u
+  CROSS JOIN foods f
+  WHERE f.created_by_user_id IS NULL
+    AND NOT EXISTS (
+      SELECT 1 FROM foods uf WHERE uf.created_by_user_id = u.id AND uf.name = f.name
+    )
+`).run();
+
 module.exports = db;
