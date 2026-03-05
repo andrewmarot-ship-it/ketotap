@@ -112,6 +112,10 @@ const seedFoods = [
   { name: 'Red Bell Pepper',                serving_description: '1 cup, sliced (~92 g)',  calories: 39,  fat_g: 0.4,  carbs_g: 9,   protein_g: 1.3, emoji: '🫑' },
   { name: 'Zucchini',                       serving_description: '1 cup, sliced (~113 g)', calories: 20,  fat_g: 0.4,  carbs_g: 3.5, protein_g: 1.5, emoji: '🥒' },
   { name: 'Lindt 85% Dark Chocolate',       serving_description: '1 square (~10 g)',        calories: 57,  fat_g: 4.5,  carbs_g: 4,   protein_g: 1,   emoji: '🍫' },
+  { name: 'Chicken Broth',                   serving_description: '6 oz (177 ml)',           calories: 10,  fat_g: 0,    carbs_g: 1,   protein_g: 1,   emoji: '🍲' },
+  { name: 'Couscous',                        serving_description: '¼ cup dry (79 g)',        calories: 90,  fat_g: 1,    carbs_g: 18,  protein_g: 3,   emoji: '🫙' },
+  { name: 'Feta Cheese',                     serving_description: '½ oz (~14 g)',            calories: 37,  fat_g: 2,    carbs_g: 1,   protein_g: 2,   emoji: '🧀' },
+  { name: 'Shrimp',                          serving_description: '500 g',                   calories: 530, fat_g: 9,    carbs_g: 0,   protein_g: 100, emoji: '🍤' },
 ];
 
 // Full replacement of global (seeded) foods on every startup:
