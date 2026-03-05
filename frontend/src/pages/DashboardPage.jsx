@@ -131,6 +131,30 @@ export default function DashboardPage() {
     }
   }
 
+  async function handlePresetRemove(preset) {
+    try {
+      const removals = preset.items
+        .map(item => logs.find(l => l.food_id === item.food_id))
+        .filter(log => log && !String(log.id).startsWith('opt-'));
+      if (removals.length === 0) return;
+      await Promise.all(removals.map(log => logsApi.remove(log.id)));
+      const res = await logsApi.getDay(viewDate);
+      setLogs(res.data);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async function handleClearAll() {
+    if (logs.length === 0) return;
+    try {
+      await logsApi.clearDay(viewDate);
+      setLogs([]);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
   async function handleCompleteDay() {
     setCompleting(true);
     try {
@@ -214,12 +238,19 @@ export default function DashboardPage() {
           </div>
           <PresetsRow
             presets={presets}
+            logs={logs}
             onLog={handlePresetLog}
+            onRemove={handlePresetRemove}
             onManage={() => setShowPresetModal(true)}
           />
         </div>
 
-        <div className="dash-section-label">Tap + to log · − to remove</div>
+        <div className="dash-section-header">
+          <span className="dash-section-label">Tap + to log · − to remove</span>
+          {logs.length > 0 && (
+            <button className="btn-clear-all" onClick={handleClearAll}>Clear All</button>
+          )}
+        </div>
         <FoodGrid
           foods={foods}
           logs={logs}

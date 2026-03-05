@@ -46,6 +46,7 @@ export const logsApi = {
   historyDay: (date) => api.get(`/logs/history/${date}`),
   add: (food_id, date) => api.post('/logs', { food_id, date }),
   remove: (id) => api.delete(`/logs/${id}`),
+  clearDay: (date) => api.delete('/logs', { params: { date } }),
   toggleComplete: (date) => api.post('/logs/complete', { date }),
   isCompleted: (date) => api.get(`/logs/complete/${date}`),
 };

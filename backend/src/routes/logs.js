@@ -123,6 +123,13 @@ router.post('/', (req, res) => {
   res.status(201).json(log);
 });
 
+// Clear all log entries for a date
+router.delete('/', (req, res) => {
+  const date = req.query.date || new Date().toISOString().split('T')[0];
+  db.prepare('DELETE FROM daily_logs WHERE user_id = ? AND date = ?').run(req.user.id, date);
+  res.json({ message: 'Day cleared', date });
+});
+
 // Remove one serving or delete entry
 router.delete('/complete/:date', (req, res) => {
   db.prepare('DELETE FROM completed_days WHERE user_id = ? AND date = ?').run(req.user.id, req.params.date);

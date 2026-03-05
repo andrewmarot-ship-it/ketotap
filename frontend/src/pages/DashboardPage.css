@@ -165,14 +165,33 @@
   cursor: default;
 }
 
+.dash-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
 .dash-section-label {
   font-size: 13px;
   font-weight: 600;
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-bottom: 12px;
 }
+
+.btn-clear-all {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--danger, #e74c3c);
+  background: transparent;
+  border: 1px solid currentColor;
+  border-radius: 8px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.btn-clear-all:hover { background: var(--danger, #e74c3c); color: white; }
 
 /* Smart suggestion banner */
 .smart-banner {
