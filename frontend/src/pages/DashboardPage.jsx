@@ -12,6 +12,12 @@ function todayStr() {
   return new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD in local time
 }
 
+function offsetDate(dateStr, days) {
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  return d.toLocaleDateString('en-CA');
+}
+
 export default function DashboardPage() {
   const { logout } = useAuth();
   const [targets, setTargets] = useState(null);
@@ -23,6 +29,7 @@ export default function DashboardPage() {
   const [presets, setPresets] = useState([]);
   const [showPresetModal, setShowPresetModal] = useState(false);
 
+  const [viewDate, setViewDate] = useState(todayStr);
   const today = todayStr();
 
   const loadData = useCallback(async () => {
@@ -30,8 +37,8 @@ export default function DashboardPage() {
       const [tRes, fRes, lRes, cRes, pRes] = await Promise.all([
         targetsApi.get(),
         foodsApi.list(),
-        logsApi.getDay(today),
-        logsApi.isCompleted(today),
+        logsApi.getDay(viewDate),
+        logsApi.isCompleted(viewDate),
         presetsApi.list(),
       ]);
       setTargets(tRes.data);
@@ -44,7 +51,7 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, [today]);
+  }, [viewDate]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -87,8 +94,8 @@ export default function DashboardPage() {
 
   async function handleAdd(food) {
     try {
-      await logsApi.add(food.id, today);
-      const res = await logsApi.getDay(today);
+      await logsApi.add(food.id, viewDate);
+      const res = await logsApi.getDay(viewDate);
       setLogs(res.data);
     } catch (e) {
       console.error('handleAdd failed', e.response?.status, e.response?.data, e);
@@ -107,7 +114,7 @@ export default function DashboardPage() {
     try {
       await logsApi.remove(log.id);
       // Re-fetch to get authoritative counts after the removal
-      const res = await logsApi.getDay(today);
+      const res = await logsApi.getDay(viewDate);
       setLogs(res.data);
     } catch (e) {
       console.error(e);
@@ -116,8 +123,8 @@ export default function DashboardPage() {
 
   async function handlePresetLog(preset) {
     try {
-      await presetsApi.log(preset.id, today);
-      const res = await logsApi.getDay(today);
+      await presetsApi.log(preset.id, viewDate);
+      const res = await logsApi.getDay(viewDate);
       setLogs(res.data);
     } catch (e) {
       console.error(e);
@@ -127,7 +134,7 @@ export default function DashboardPage() {
   async function handleCompleteDay() {
     setCompleting(true);
     try {
-      const res = await logsApi.toggleComplete(today);
+      const res = await logsApi.toggleComplete(viewDate);
       setIsDayCompleted(res.data.completed);
     } catch (e) {
       console.error(e);
@@ -137,7 +144,8 @@ export default function DashboardPage() {
   }
 
   const formatDate = () => {
-    return new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    const d = new Date(viewDate + 'T00:00:00');
+    return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
   };
 
   if (loading) return <div className="dash-loading">Loading…</div>;
@@ -154,8 +162,15 @@ export default function DashboardPage() {
       </header>
 
       <main className="dash-main">
-        <div className="dash-date">
-          <span>{formatDate()}</span>
+        <div className="dash-date-nav">
+          <button className="date-nav-btn" onClick={() => setViewDate(d => offsetDate(d, -1))}>‹</button>
+          <div className="dash-date-center">
+            <span className="dash-date-text">{formatDate()}</span>
+            {viewDate !== today && (
+              <button className="date-today-btn" onClick={() => setViewDate(today)}>Today</button>
+            )}
+          </div>
+          <button className="date-nav-btn" onClick={() => setViewDate(d => offsetDate(d, 1))} disabled={viewDate === today}>›</button>
         </div>
 
         {targets && (

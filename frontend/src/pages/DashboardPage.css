@@ -60,11 +60,61 @@
   flex: 1;
 }
 
-.dash-date {
+.dash-date-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.date-nav-btn {
+  background: none;
+  border: none;
+  font-size: 22px;
+  color: var(--text-secondary);
+  padding: 4px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.date-nav-btn:hover:not(:disabled) {
+  color: var(--primary);
+  background: var(--card-hover);
+}
+.date-nav-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.dash-date-center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dash-date-text {
   font-size: 14px;
   color: var(--text-secondary);
-  margin-bottom: 12px;
   font-weight: 500;
+}
+
+.date-today-btn {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--primary);
+  background: var(--card-hover);
+  border: 1px solid var(--primary);
+  border-radius: 10px;
+  padding: 2px 8px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.date-today-btn:hover {
+  background: var(--primary);
+  color: white;
 }
 
 /* Macro rings */
