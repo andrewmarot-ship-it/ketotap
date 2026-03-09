@@ -21,15 +21,15 @@ router.get('/:id', (req, res) => {
 
 // Create food
 router.post('/', (req, res) => {
-  const { name, serving_description, calories, fat_g, protein_g, carbs_g, image_url } = req.body;
+  const { name, serving_description, calories, fat_g, protein_g, carbs_g, emoji } = req.body;
   if (!name || !serving_description || calories == null || fat_g == null || protein_g == null || carbs_g == null) {
     return res.status(400).json({ error: 'name, serving_description, calories, fat_g, protein_g, carbs_g are required' });
   }
 
   const result = db.prepare(`
-    INSERT INTO foods (name, serving_description, calories, fat_g, protein_g, carbs_g, image_url, created_by_user_id)
+    INSERT INTO foods (name, serving_description, calories, fat_g, protein_g, carbs_g, emoji, created_by_user_id)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(name, serving_description, parseInt(calories), parseFloat(fat_g), parseFloat(protein_g), parseFloat(carbs_g), image_url || null, req.user.id);
+  `).run(name, serving_description, parseInt(calories), parseFloat(fat_g), parseFloat(protein_g), parseFloat(carbs_g), emoji || '🍽️', req.user.id);
 
   const food = db.prepare('SELECT * FROM foods WHERE id = ?').get(result.lastInsertRowid);
   res.status(201).json(food);
@@ -40,7 +40,7 @@ router.put('/:id', (req, res) => {
   const food = db.prepare('SELECT * FROM foods WHERE id = ? AND created_by_user_id = ?').get(req.params.id, req.user.id);
   if (!food) return res.status(403).json({ error: 'Food not found or access denied' });
 
-  const { name, serving_description, calories, fat_g, protein_g, carbs_g, image_url } = req.body;
+  const { name, serving_description, calories, fat_g, protein_g, carbs_g, emoji } = req.body;
 
   db.prepare(`
     UPDATE foods SET
@@ -50,7 +50,7 @@ router.put('/:id', (req, res) => {
       fat_g = ?,
       protein_g = ?,
       carbs_g = ?,
-      image_url = ?,
+      emoji = ?,
       updated_at = datetime('now')
     WHERE id = ?
   `).run(
@@ -60,7 +60,7 @@ router.put('/:id', (req, res) => {
     fat_g != null ? parseFloat(fat_g) : food.fat_g,
     protein_g != null ? parseFloat(protein_g) : food.protein_g,
     carbs_g != null ? parseFloat(carbs_g) : food.carbs_g,
-    image_url !== undefined ? image_url : food.image_url,
+    emoji != null ? emoji : food.emoji,
     req.params.id
   );
 

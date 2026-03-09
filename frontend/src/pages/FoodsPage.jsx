@@ -4,16 +4,60 @@ import BottomNav from '../components/BottomNav';
 import './FoodsPage.css';
 
 const EMPTY_FOOD = {
-  name: '', serving_description: '', calories: '', fat_g: '', protein_g: '', carbs_g: '', image_url: '',
+  name: '', serving_description: '', calories: '', fat_g: '', protein_g: '', carbs_g: '', emoji: '',
   nutrition_source: null, nutrition_source_id: null, nutrition_quantity_label: null,
   nutrition_auto_filled_at: null, nutrition_overridden: 0,
 };
 
-// Attempt auto image lookup via Unsplash source (no API key needed)
-function guessImageUrl(name) {
-  if (!name) return '';
-  const query = encodeURIComponent(name.toLowerCase());
-  return `https://source.unsplash.com/200x200/?${query},food`;
+function guessEmoji(name) {
+  if (!name) return '🍽️';
+  const n = name.toLowerCase();
+  const map = [
+    [['olive oil', 'olive'],                                        '🫒'],
+    [['coconut oil', 'coconut'],                                    '🥥'],
+    [['butter', 'ghee'],                                            '🧈'],
+    [['cream', 'milk'],                                             '🥛'],
+    [['almond', 'walnut', 'pecan', 'cashew', 'pistachio', 'hazelnut', 'macadamia'], '🌰'],
+    [['nut butter', 'almond butter', 'peanut butter', 'tahini'],   '🌰'],
+    [['chia', 'hemp seed', 'flaxseed', 'flax seed', 'sunflower seed', 'pumpkin seed'], '🌱'],
+    [['seed', 'seeds'],                                             '🌱'],
+    [['chicken', 'turkey', 'duck', 'poultry'],                      '🍗'],
+    [['shrimp', 'prawn', 'lobster', 'crab', 'scallop'],             '🍤'],
+    [['salmon', 'tuna', 'fish', 'cod', 'halibut', 'sardine', 'mackerel', 'tilapia', 'trout'], '🐟'],
+    [['beef', 'steak', 'ground beef', 'brisket', 'ribeye', 'lamb', 'venison'], '🥩'],
+    [['bacon', 'pork', 'ham', 'sausage', 'pepperoni', 'salami', 'prosciutto'], '🥓'],
+    [['egg'],                                                       '🥚'],
+    [['cheese', 'feta', 'mozzarella', 'cheddar', 'brie', 'parmesan', 'gouda', 'marble'], '🧀'],
+    [['yogurt', 'yoghurt'],                                         '🍶'],
+    [['avocado'],                                                   '🥑'],
+    [['broccoli'],                                                  '🥦'],
+    [['pepper', 'capsicum', 'jalapeño', 'jalapeno', 'chili'],       '🫑'],
+    [['zucchini', 'courgette', 'cucumber'],                         '🥒'],
+    [['chocolate', 'cocoa', 'cacao'],                               '🍫'],
+    [['coffee', 'espresso', 'latte', 'cappuccino'],                 '☕'],
+    [['tea', 'matcha'],                                             '🍵'],
+    [['water', 'sparkling water'],                                  '💧'],
+    [['bread', 'toast', 'sourdough', 'bagel', 'pita'],              '🍞'],
+    [['rice', 'quinoa', 'couscous'],                                '🫙'],
+    [['oat', 'granola', 'cereal', 'muesli'],                        '🌾'],
+    [['pasta', 'noodle', 'spaghetti', 'linguine', 'fettuccine'],    '🍝'],
+    [['soup', 'broth', 'stock', 'bone broth'],                      '🍲'],
+    [['salad', 'lettuce', 'spinach', 'kale', 'arugula', 'mixed greens'], '🥗'],
+    [['tomato'],                                                    '🍅'],
+    [['lemon', 'lime'],                                             '🍋'],
+    [['orange', 'mandarin', 'tangerine', 'grapefruit'],             '🍊'],
+    [['strawberry', 'blueberry', 'raspberry', 'blackberry', 'berry'], '🍓'],
+    [['apple'],                                                     '🍎'],
+    [['banana'],                                                    '🍌'],
+    [['mushroom'],                                                  '🍄'],
+    [['onion', 'shallot', 'leek', 'garlic'],                        '🧅'],
+    [['protein powder', 'whey', 'protein shake', 'creatine', 'supplement'], '💪'],
+    [['oil', 'vinegar', 'sauce', 'dressing', 'mayo', 'mustard', 'ketchup'], '🫙'],
+  ];
+  for (const [keywords, emoji] of map) {
+    if (keywords.some(k => n.includes(k))) return emoji;
+  }
+  return '🍽️';
 }
 
 export default function FoodsPage() {
@@ -51,7 +95,7 @@ export default function FoodsPage() {
       fat_g: food.fat_g,
       protein_g: food.protein_g,
       carbs_g: food.carbs_g,
-      image_url: food.image_url || '',
+      emoji: food.emoji || '🍽️',
     });
     setError('');
   }
@@ -88,11 +132,6 @@ export default function FoodsPage() {
     }
   }
 
-  async function handleAutoImage() {
-    const url = guessImageUrl(form.name);
-    setForm(f => ({ ...f, image_url: url }));
-  }
-
   async function handleSave(e) {
     e.preventDefault();
     setError('');
@@ -104,6 +143,7 @@ export default function FoodsPage() {
         fat_g: Number(form.fat_g),
         protein_g: Number(form.protein_g),
         carbs_g: Number(form.carbs_g),
+        emoji: form.emoji || guessEmoji(form.name),
         nutrition_source: nutritionMeta ? 'USDA_FDC' : null,
         nutrition_source_id: nutritionMeta?.fdc_id?.toString() ?? null,
         nutrition_quantity_label: nutritionMeta?.quantity_label ?? null,
@@ -149,10 +189,7 @@ export default function FoodsPage() {
           {foods.map(food => (
             <div key={food.id} className="food-row card">
               <div className="food-row-img">
-                {food.image_url
-                  ? <img src={food.image_url} alt={food.name} onError={e => e.target.style.display='none'} />
-                  : <span>🍽️</span>
-                }
+                <span>{food.emoji || '🍽️'}</span>
               </div>
               <div className="food-row-info">
                 <span className="food-row-name">{food.name}</span>
@@ -184,7 +221,16 @@ export default function FoodsPage() {
             <form onSubmit={handleSave} className="food-form">
               <div className="field">
                 <label>Name *</label>
-                <input className="input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Avocado" required />
+                <input
+                  className="input"
+                  value={form.name}
+                  onChange={e => {
+                    const name = e.target.value;
+                    setForm(f => ({ ...f, name, emoji: guessEmoji(name) }));
+                  }}
+                  placeholder="e.g. Avocado"
+                  required
+                />
               </div>
               <div className="field">
                 <label>Serving Description *</label>
@@ -262,19 +308,6 @@ export default function FoodsPage() {
               {autoFilled.size > 0 && (
                 <p className="nutrition-source">Data from USDA FoodData Central</p>
               )}
-
-              <div className="field">
-                <label>Image URL</label>
-                <div className="image-row">
-                  <input className="input" value={form.image_url} onChange={e => setForm(f => ({ ...f, image_url: e.target.value }))} placeholder="https://…" />
-                  <button type="button" className="btn-auto-img" onClick={handleAutoImage} disabled={!form.name}>
-                    Auto
-                  </button>
-                </div>
-                {form.image_url && (
-                  <img src={form.image_url} alt="preview" className="img-preview" onError={e => e.target.style.display='none'} />
-                )}
-              </div>
 
               {error && <p className="error-msg">{error}</p>}
 

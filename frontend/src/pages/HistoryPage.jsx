@@ -326,10 +326,7 @@ export default function HistoryPage() {
                 {detail.map(log => (
                   <div key={log.id} className="detail-row">
                     <div className="detail-img">
-                      {log.image_url
-                        ? <img src={log.image_url} alt={log.name} onError={e => e.target.style.display='none'} />
-                        : <span>🍽️</span>
-                      }
+                      <span>{log.emoji || '🍽️'}</span>
                     </div>
                     <div className="detail-info">
                       <span className="detail-name">{log.name}</span>
