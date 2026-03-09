@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react';
-import { foodsApi } from '../api/client';
+import { foodsApi, nutritionApi } from '../api/client';
 import BottomNav from '../components/BottomNav';
 import './FoodsPage.css';
 
-const EMPTY_FOOD = { name: '', serving_description: '', calories: '', fat_g: '', protein_g: '', carbs_g: '', image_url: '' };
+const EMPTY_FOOD = {
+  name: '', serving_description: '', calories: '', fat_g: '', protein_g: '', carbs_g: '', image_url: '',
+  nutrition_source: null, nutrition_source_id: null, nutrition_quantity_label: null,
+  nutrition_auto_filled_at: null, nutrition_overridden: 0,
+};
 
 // Attempt auto image lookup via Unsplash source (no API key needed)
 function guessImageUrl(name) {
@@ -20,6 +24,10 @@ export default function FoodsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [autoFilled, setAutoFilled] = useState(new Set());
+  const [autoFilling, setAutoFilling] = useState(false);
+  const [autoFillError, setAutoFillError] = useState('');
+  const [nutritionMeta, setNutritionMeta] = useState(null);
 
   useEffect(() => {
     foodsApi.list()
@@ -52,6 +60,32 @@ export default function FoodsPage() {
     setEditing(null);
     setForm(EMPTY_FOOD);
     setError('');
+    setAutoFilled(new Set());
+    setAutoFillError('');
+    setNutritionMeta(null);
+  }
+
+  async function handleAutoFillNutrition() {
+    setAutoFillError('');
+    setAutoFilling(true);
+    try {
+      const res = await nutritionApi.lookup(form.name, form.serving_description);
+      const d = res.data;
+      setForm(f => ({ ...f, calories: d.calories, fat_g: d.fat_g, protein_g: d.protein_g, carbs_g: d.carbs_g }));
+      setAutoFilled(new Set(['calories', 'fat_g', 'protein_g', 'carbs_g']));
+      setNutritionMeta({ fdc_id: d.fdc_id, food_name: d.food_name, quantity_label: d.quantity_label });
+    } catch (err) {
+      const code = err.response?.data?.error;
+      if (code === 'food_not_found') {
+        setAutoFillError('Could not find nutrition data for this food. Enter values manually.');
+      } else if (code === 'quantity_parse_error') {
+        setAutoFillError('Could not understand the serving description. Try a format like "1 tbsp" or "100g".');
+      } else {
+        setAutoFillError('Auto-fill unavailable right now. Enter values manually.');
+      }
+    } finally {
+      setAutoFilling(false);
+    }
   }
 
   async function handleAutoImage() {
@@ -70,6 +104,11 @@ export default function FoodsPage() {
         fat_g: Number(form.fat_g),
         protein_g: Number(form.protein_g),
         carbs_g: Number(form.carbs_g),
+        nutrition_source: nutritionMeta ? 'USDA_FDC' : null,
+        nutrition_source_id: nutritionMeta?.fdc_id?.toString() ?? null,
+        nutrition_quantity_label: nutritionMeta?.quantity_label ?? null,
+        nutrition_auto_filled_at: nutritionMeta ? new Date().toISOString() : null,
+        nutrition_overridden: nutritionMeta && autoFilled.size < 4 ? 1 : 0,
       };
       if (editing === 'new') {
         const res = await foodsApi.create(payload);
@@ -152,27 +191,77 @@ export default function FoodsPage() {
                 <input className="input" value={form.serving_description} onChange={e => setForm(f => ({ ...f, serving_description: e.target.value }))} placeholder="e.g. 1 whole (200g)" required />
               </div>
 
+              {form.name && form.serving_description && (
+                <div className="autofill-row">
+                  <button
+                    type="button"
+                    className="btn-autofill"
+                    onClick={handleAutoFillNutrition}
+                    disabled={autoFilling}
+                  >
+                    {autoFilling ? <><span className="autofill-spinner" /> Looking up…</> : '✨ Auto-fill Nutrition'}
+                  </button>
+                  {autoFillError && <p className="autofill-error">{autoFillError}</p>}
+                </div>
+              )}
+
               <div className="field-row">
                 <div className="field">
-                  <label>Calories *</label>
-                  <input className="input" type="number" min="0" value={form.calories} onChange={e => setForm(f => ({ ...f, calories: e.target.value }))} placeholder="kcal" required />
+                  <label>
+                    Calories *
+                    {autoFilled.has('calories') && <span className="auto-badge">Auto</span>}
+                  </label>
+                  <input className="input" type="number" min="0" value={form.calories}
+                    onChange={e => {
+                      setForm(f => ({ ...f, calories: e.target.value }));
+                      setAutoFilled(prev => { const s = new Set(prev); s.delete('calories'); return s; });
+                    }}
+                    placeholder="kcal" required />
                 </div>
                 <div className="field">
-                  <label>Net Carbs (g) *</label>
-                  <input className="input" type="number" min="0" step="0.1" value={form.carbs_g} onChange={e => setForm(f => ({ ...f, carbs_g: e.target.value }))} placeholder="g" required />
+                  <label>
+                    Net Carbs (g) *
+                    {autoFilled.has('carbs_g') && <span className="auto-badge">Auto</span>}
+                  </label>
+                  <input className="input" type="number" min="0" step="0.1" value={form.carbs_g}
+                    onChange={e => {
+                      setForm(f => ({ ...f, carbs_g: e.target.value }));
+                      setAutoFilled(prev => { const s = new Set(prev); s.delete('carbs_g'); return s; });
+                    }}
+                    placeholder="g" required />
                 </div>
               </div>
 
               <div className="field-row">
                 <div className="field">
-                  <label>Fat (g) *</label>
-                  <input className="input" type="number" min="0" step="0.1" value={form.fat_g} onChange={e => setForm(f => ({ ...f, fat_g: e.target.value }))} placeholder="g" required />
+                  <label>
+                    Fat (g) *
+                    {autoFilled.has('fat_g') && <span className="auto-badge">Auto</span>}
+                  </label>
+                  <input className="input" type="number" min="0" step="0.1" value={form.fat_g}
+                    onChange={e => {
+                      setForm(f => ({ ...f, fat_g: e.target.value }));
+                      setAutoFilled(prev => { const s = new Set(prev); s.delete('fat_g'); return s; });
+                    }}
+                    placeholder="g" required />
                 </div>
                 <div className="field">
-                  <label>Protein (g) *</label>
-                  <input className="input" type="number" min="0" step="0.1" value={form.protein_g} onChange={e => setForm(f => ({ ...f, protein_g: e.target.value }))} placeholder="g" required />
+                  <label>
+                    Protein (g) *
+                    {autoFilled.has('protein_g') && <span className="auto-badge">Auto</span>}
+                  </label>
+                  <input className="input" type="number" min="0" step="0.1" value={form.protein_g}
+                    onChange={e => {
+                      setForm(f => ({ ...f, protein_g: e.target.value }));
+                      setAutoFilled(prev => { const s = new Set(prev); s.delete('protein_g'); return s; });
+                    }}
+                    placeholder="g" required />
                 </div>
               </div>
+
+              {autoFilled.size > 0 && (
+                <p className="nutrition-source">Data from USDA FoodData Central</p>
+              )}
 
               <div className="field">
                 <label>Image URL</label>

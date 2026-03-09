@@ -224,3 +224,63 @@
 .form-actions .btn-primary, .form-actions .btn-secondary {
   flex: 1;
 }
+
+/* Auto-fill nutrition */
+.autofill-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.btn-autofill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--primary);
+  color: white;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background 0.15s;
+  align-self: flex-start;
+}
+.btn-autofill:hover:not(:disabled) { background: var(--primary-dark); }
+.btn-autofill:disabled { background: #aaa; cursor: not-allowed; }
+
+.autofill-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.autofill-error {
+  font-size: 13px;
+  color: var(--danger, #e53e3e);
+  margin: 0;
+}
+
+.auto-badge {
+  display: inline-block;
+  margin-left: 6px;
+  background: var(--primary);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 4px;
+  padding: 1px 5px;
+  vertical-align: middle;
+  letter-spacing: 0.03em;
+}
+
+.nutrition-source {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin: 0;
+  text-align: right;
+}

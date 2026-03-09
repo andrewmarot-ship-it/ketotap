@@ -14,6 +14,7 @@ app.use('/api/targets', require('./routes/targets'));
 app.use('/api/foods', require('./routes/foods'));
 app.use('/api/logs', require('./routes/logs'));
 app.use('/api/presets', require('./routes/presets'));
+app.use('/api/nutrition', require('./routes/nutrition'));
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok', app: 'KetoTap' }));
 

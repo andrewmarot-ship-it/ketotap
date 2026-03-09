@@ -90,6 +90,18 @@ try {
   db.exec("ALTER TABLE foods ADD COLUMN emoji TEXT NOT NULL DEFAULT '🍽️'");
 } catch (_) { /* column already exists */ }
 
+// Add nutrition provenance columns (additive migration, safe to run every startup)
+const nutritionCols = [
+  "ALTER TABLE foods ADD COLUMN nutrition_source TEXT",
+  "ALTER TABLE foods ADD COLUMN nutrition_source_id TEXT",
+  "ALTER TABLE foods ADD COLUMN nutrition_quantity_label TEXT",
+  "ALTER TABLE foods ADD COLUMN nutrition_auto_filled_at TEXT",
+  "ALTER TABLE foods ADD COLUMN nutrition_overridden INTEGER DEFAULT 0",
+];
+for (const stmt of nutritionCols) {
+  try { db.exec(stmt); } catch (_) { /* column already exists */ }
+}
+
 // ── Default food list ────────────────────────────────────────────────────────
 const seedFoods = [
   { name: 'Olive Oil',                      serving_description: '1 tbsp (14 g)',           calories: 119, fat_g: 13.5, carbs_g: 0,   protein_g: 0,   emoji: '🫒' },

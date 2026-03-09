@@ -51,6 +51,10 @@ export const logsApi = {
   isCompleted: (date) => api.get(`/logs/complete/${date}`),
 };
 
+export const nutritionApi = {
+  lookup: (food, quantity) => api.get('/nutrition/lookup', { params: { food, quantity } }),
+};
+
 export const presetsApi = {
   list: () => api.get('/presets'),
   create: (preset) => api.post('/presets', preset),
