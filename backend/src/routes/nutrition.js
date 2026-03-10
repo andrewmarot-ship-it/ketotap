@@ -10,6 +10,14 @@ const cache = new Map();
 const CACHE_TTL_V1_MS = 24 * 60 * 60 * 1000;       // 24 hours (v1 lookup)
 const CACHE_TTL_V2_MS = 7 * 24 * 60 * 60 * 1000;   // 7 days  (v2 portions)
 
+// Purge expired entries once per hour so the Map doesn't grow unboundedly
+setInterval(() => {
+  const now = Date.now();
+  for (const [k, v] of cache) {
+    if (v.expiresAt <= now) cache.delete(k);
+  }
+}, 60 * 60 * 1000).unref();
+
 // USDA FoodData Central nutrient IDs
 const NID = { calories: 1008, fat: 1004, protein: 1003, carbs: 1005 };
 
@@ -28,7 +36,7 @@ function httpsGet(url) {
           } else {
             resolve(data);
           }
-        } catch (e) {
+        } catch {
           reject(new Error('Invalid JSON from upstream'));
         }
       });
@@ -36,11 +44,22 @@ function httpsGet(url) {
   });
 }
 
-// Extract a nutrient value from a full food-detail foodNutrients array
+// Extract a nutrient value from a food-detail foodNutrients array
 function getNutrient(foodNutrients, nid) {
   const n = (foodNutrients || [])
     .find(fn => fn.nutrient?.id === nid || fn.nutrientId === nid);
   return n ? (n.amount ?? n.value ?? 0) : 0;
+}
+
+function upstreamErr(res, err) {
+  console.error('[nutrition] USDA error:', err.message);
+  const isRateLimit = err.message === 'USDA_RATE_LIMIT';
+  return res.status(502).json({
+    error: 'upstream_error',
+    message: isRateLimit
+      ? 'USDA rate limit reached. Try again later or set USDA_FDC_API_KEY.'
+      : 'Failed to reach USDA FoodData Central',
+  });
 }
 
 // ─── v2: GET /api/nutrition/portions ─────────────────────────────────────────
@@ -55,7 +74,8 @@ router.get('/portions', async (req, res) => {
     return res.status(400).json({ error: 'food_not_found', message: 'food param is required' });
   }
 
-  const cacheKey = `portions:${food.trim().toLowerCase()}`;
+  const foodQ = food.trim();
+  const cacheKey = `portions:${foodQ.toLowerCase()}`;
   const now = Date.now();
   const cached = cache.get(cacheKey);
   if (cached && cached.expiresAt > now) {
@@ -64,42 +84,50 @@ router.get('/portions', async (req, res) => {
 
   const apiKey = process.env.USDA_FDC_API_KEY || 'DEMO_KEY';
 
-  // Single search call — Foundation+SR Legacy first, fall back to Branded if empty.
-  // The search response already includes foodPortions and foodNutrients for these
-  // data types, so no second detail call is needed.
-  let match = null;
+  // Step 1: search Foundation+SR Legacy first; fall back to Branded if empty or errored.
+  let fdcId = null;
+  let lastSearchErr = null;
   for (const dataType of ['Foundation,SR%20Legacy', 'Foundation,SR%20Legacy,Branded']) {
     const searchUrl =
-      `https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(food.trim())}` +
+      `https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(foodQ)}` +
       `&pageSize=5&dataType=${dataType}&api_key=${apiKey}`;
-    let searchResult;
     try {
-      searchResult = await httpsGet(searchUrl);
-    } catch {
-      return res.status(502).json({ error: 'upstream_error', message: 'Failed to reach USDA FoodData Central' });
-    }
-    const foods = searchResult.foods || [];
-    if (foods.length > 0) {
-      match = foods[0];
-      break;
+      const result = await httpsGet(searchUrl);
+      const foods = result.foods || [];
+      if (foods.length > 0) {
+        fdcId = foods[0].fdcId;
+        break;
+      }
+    } catch (err) {
+      console.error('[nutrition] USDA search error:', err.message);
+      lastSearchErr = err;
     }
   }
 
-  if (!match) {
-    return res.status(404).json({ error: 'food_not_found', message: `No USDA entry found for "${food}"` });
+  if (!fdcId) {
+    if (lastSearchErr) return upstreamErr(res, lastSearchErr);
+    return res.status(404).json({ error: 'food_not_found', message: `No USDA entry found for "${foodQ}"` });
+  }
+
+  // Step 2: fetch full food detail — only this response contains foodPortions
+  let detail;
+  try {
+    detail = await httpsGet(`https://api.nal.usda.gov/fdc/v1/food/${fdcId}?api_key=${apiKey}`);
+  } catch (err) {
+    return upstreamErr(res, err);
   }
 
   // Per-100g macros (round to 1 decimal)
   const r1 = v => Math.round(v * 10) / 10;
   const per_100g = {
-    calories:  r1(getNutrient(match.foodNutrients, NID.calories)),
-    fat_g:     r1(getNutrient(match.foodNutrients, NID.fat)),
-    carbs_g:   r1(getNutrient(match.foodNutrients, NID.carbs)),
-    protein_g: r1(getNutrient(match.foodNutrients, NID.protein)),
+    calories:  r1(getNutrient(detail.foodNutrients, NID.calories)),
+    fat_g:     r1(getNutrient(detail.foodNutrients, NID.fat)),
+    carbs_g:   r1(getNutrient(detail.foodNutrients, NID.carbs)),
+    protein_g: r1(getNutrient(detail.foodNutrients, NID.protein)),
   };
 
-  // Build portions list from search result's foodPortions
-  const rawPortions = (match.foodPortions || [])
+  // Build portions list
+  const rawPortions = (detail.foodPortions || [])
     .map(p => ({
       label: (p.portionDescription || p.modifier || '').trim(),
       gram_weight: Math.round(p.gramWeight || 0),
@@ -119,8 +147,8 @@ router.get('/portions', async (req, res) => {
   const portions = [{ label: '100g', gram_weight: 100 }, ...deduped].slice(0, 6);
 
   const data = {
-    fdc_id: match.fdcId,
-    food_name: match.description,
+    fdc_id: detail.fdcId,
+    food_name: detail.description,
     source: 'USDA FoodData Central',
     per_100g,
     portions,
@@ -185,8 +213,8 @@ router.get('/lookup', async (req, res) => {
   let searchResult;
   try {
     searchResult = await httpsGet(searchUrl);
-  } catch {
-    return res.status(502).json({ error: 'upstream_error', message: 'Failed to reach USDA FoodData Central' });
+  } catch (err) {
+    return upstreamErr(res, err);
   }
 
   const foods = searchResult.foods || [];
