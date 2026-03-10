@@ -63,15 +63,21 @@ function guessEmoji(name) {
 export default function FoodsPage() {
   const [foods, setFoods] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState(null); // food object or null
+  const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY_FOOD);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+
+  // Nutrition auto-fill state
   const [autoFilled, setAutoFilled] = useState(new Set());
-  const [autoFilling, setAutoFilling] = useState(false);
-  const [autoFillError, setAutoFillError] = useState('');
   const [nutritionMeta, setNutritionMeta] = useState(null);
+
+  // v2 portion-picker state
+  const [portionsLoading, setPortionsLoading] = useState(false);
+  const [portionsData, setPortionsData] = useState(null);   // null | API response
+  const [selectedPortion, setSelectedPortion] = useState(null); // null | { label, gram_weight }
+  const [portionsError, setPortionsError] = useState('');
 
   useEffect(() => {
     foodsApi.list()
@@ -80,10 +86,20 @@ export default function FoodsPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  function resetPortionState() {
+    setPortionsLoading(false);
+    setPortionsData(null);
+    setSelectedPortion(null);
+    setPortionsError('');
+    setAutoFilled(new Set());
+    setNutritionMeta(null);
+  }
+
   function openNew() {
     setEditing('new');
     setForm(EMPTY_FOOD);
     setError('');
+    resetPortionState();
   }
 
   function openEdit(food) {
@@ -98,38 +114,55 @@ export default function FoodsPage() {
       emoji: food.emoji || '🍽️',
     });
     setError('');
+    resetPortionState();
   }
 
   function closeForm() {
     setEditing(null);
     setForm(EMPTY_FOOD);
     setError('');
-    setAutoFilled(new Set());
-    setAutoFillError('');
-    setNutritionMeta(null);
+    resetPortionState();
   }
 
-  async function handleAutoFillNutrition() {
-    setAutoFillError('');
-    setAutoFilling(true);
+  async function handleFindPortions() {
+    setPortionsError('');
+    setPortionsData(null);
+    setSelectedPortion(null);
+    setAutoFilled(new Set());
+    setPortionsLoading(true);
     try {
-      const res = await nutritionApi.lookup(form.name, form.serving_description);
-      const d = res.data;
-      setForm(f => ({ ...f, calories: d.calories, fat_g: d.fat_g, protein_g: d.protein_g, carbs_g: d.carbs_g }));
-      setAutoFilled(new Set(['calories', 'fat_g', 'protein_g', 'carbs_g']));
-      setNutritionMeta({ fdc_id: d.fdc_id, food_name: d.food_name, quantity_label: d.quantity_label });
+      const res = await nutritionApi.portions(form.name);
+      setPortionsData(res.data);
     } catch (err) {
       const code = err.response?.data?.error;
-      if (code === 'food_not_found') {
-        setAutoFillError('Could not find nutrition data for this food. Enter values manually.');
-      } else if (code === 'quantity_parse_error') {
-        setAutoFillError('Could not understand the serving description. Try a format like "1 tbsp" or "100g".');
-      } else {
-        setAutoFillError('Auto-fill unavailable right now. Enter values manually.');
-      }
+      setPortionsError(
+        code === 'food_not_found'
+          ? `No portions found for "${form.name}". Enter macros manually.`
+          : 'Could not reach nutrition service. Enter macros manually.'
+      );
     } finally {
-      setAutoFilling(false);
+      setPortionsLoading(false);
     }
+  }
+
+  function handleSelectPortion(portion) {
+    const { per_100g } = portionsData;
+    const scale = portion.gram_weight / 100;
+    const r = v => Math.round(v * 10) / 10;
+    setForm(f => ({
+      ...f,
+      calories:  r(per_100g.calories  * scale),
+      fat_g:     r(per_100g.fat_g     * scale),
+      protein_g: r(per_100g.protein_g * scale),
+      carbs_g:   r(per_100g.carbs_g   * scale),
+    }));
+    setSelectedPortion(portion);
+    setAutoFilled(new Set(['calories', 'fat_g', 'protein_g', 'carbs_g']));
+    setNutritionMeta({
+      fdc_id: portionsData.fdc_id,
+      food_name: portionsData.food_name,
+      quantity_label: `${portion.label} (${portion.gram_weight}g)`,
+    });
   }
 
   async function handleSave(e) {
@@ -139,16 +172,16 @@ export default function FoodsPage() {
     try {
       const payload = {
         ...form,
-        calories: Number(form.calories),
-        fat_g: Number(form.fat_g),
+        calories:  Number(form.calories),
+        fat_g:     Number(form.fat_g),
         protein_g: Number(form.protein_g),
-        carbs_g: Number(form.carbs_g),
+        carbs_g:   Number(form.carbs_g),
         emoji: form.emoji || guessEmoji(form.name),
-        nutrition_source: nutritionMeta ? 'USDA_FDC' : null,
-        nutrition_source_id: nutritionMeta?.fdc_id?.toString() ?? null,
+        nutrition_source:         nutritionMeta ? 'USDA_FDC' : null,
+        nutrition_source_id:      nutritionMeta?.fdc_id?.toString() ?? null,
         nutrition_quantity_label: nutritionMeta?.quantity_label ?? null,
         nutrition_auto_filled_at: nutritionMeta ? new Date().toISOString() : null,
-        nutrition_overridden: nutritionMeta && autoFilled.size < 4 ? 1 : 0,
+        nutrition_overridden:     nutritionMeta && autoFilled.size < 4 ? 1 : 0,
       };
       if (editing === 'new') {
         const res = await foodsApi.create(payload);
@@ -219,6 +252,8 @@ export default function FoodsPage() {
           <div className="modal-box card" onClick={e => e.stopPropagation()}>
             <h2>{editing === 'new' ? 'Add Food' : 'Edit Food'}</h2>
             <form onSubmit={handleSave} className="food-form">
+
+              {/* Name */}
               <div className="field">
                 <label>Name *</label>
                 <input
@@ -232,25 +267,74 @@ export default function FoodsPage() {
                   required
                 />
               </div>
-              <div className="field">
-                <label>Serving Description *</label>
-                <input className="input" value={form.serving_description} onChange={e => setForm(f => ({ ...f, serving_description: e.target.value }))} placeholder="e.g. 1 whole (200g)" required />
-              </div>
 
-              {form.name && form.serving_description && (
-                <div className="autofill-row">
-                  <button
-                    type="button"
-                    className="btn-autofill"
-                    onClick={handleAutoFillNutrition}
-                    disabled={autoFilling}
-                  >
-                    {autoFilling ? <><span className="autofill-spinner" /> Looking up…</> : '✨ Auto-fill Nutrition'}
-                  </button>
-                  {autoFillError && <p className="autofill-error">{autoFillError}</p>}
+              {/* Portion picker — visible when a name is typed */}
+              {form.name && (
+                <div className="portion-row">
+                  {/* "Find Portions" button — shown until portions are loaded */}
+                  {!portionsData && (
+                    <button
+                      type="button"
+                      className="btn-autofill"
+                      onClick={handleFindPortions}
+                      disabled={portionsLoading}
+                    >
+                      {portionsLoading
+                        ? <><span className="autofill-spinner" /> Finding portions…</>
+                        : '🔍 Find Portions'}
+                    </button>
+                  )}
+
+                  {/* Error */}
+                  {portionsError && <p className="autofill-error">{portionsError}</p>}
+
+                  {/* Portion chips */}
+                  {portionsData && (
+                    <div className="portion-picker">
+                      <p className="portion-label-text">{portionsData.food_name}</p>
+                      <div className="portion-chips">
+                        {portionsData.portions.map(p => {
+                          const isSelected =
+                            selectedPortion?.label === p.label &&
+                            selectedPortion?.gram_weight === p.gram_weight;
+                          return (
+                            <button
+                              key={`${p.label}-${p.gram_weight}`}
+                              type="button"
+                              className={`portion-chip${isSelected ? ' portion-chip--selected' : ''}`}
+                              onClick={() => handleSelectPortion(p)}
+                            >
+                              {p.label}
+                              <span className="portion-chip-grams">({p.gram_weight}g)</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <button
+                        type="button"
+                        className="btn-portions-reset"
+                        onClick={handleFindPortions}
+                      >
+                        ↺ Search again
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
+              {/* Serving Description */}
+              <div className="field">
+                <label>Serving Description *</label>
+                <input
+                  className="input"
+                  value={form.serving_description}
+                  onChange={e => setForm(f => ({ ...f, serving_description: e.target.value }))}
+                  placeholder="e.g. 1 whole (200g)"
+                  required
+                />
+              </div>
+
+              {/* Macros */}
               <div className="field-row">
                 <div className="field">
                   <label>

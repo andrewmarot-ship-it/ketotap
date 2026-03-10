@@ -52,7 +52,8 @@ export const logsApi = {
 };
 
 export const nutritionApi = {
-  lookup: (food, quantity) => api.get('/nutrition/lookup', { params: { food, quantity } }),
+  lookup:   (food, quantity) => api.get('/nutrition/lookup',   { params: { food, quantity } }),
+  portions: (food)           => api.get('/nutrition/portions', { params: { food } }),
 };
 
 export const presetsApi = {
