@@ -19,8 +19,18 @@ function httpsGet(url) {
       let body = '';
       res.on('data', (chunk) => { body += chunk; });
       res.on('end', () => {
-        try { resolve(JSON.parse(body)); }
-        catch (e) { reject(new Error('Invalid JSON from upstream')); }
+        try {
+          const data = JSON.parse(body);
+          if (res.statusCode === 429) {
+            reject(new Error('USDA_RATE_LIMIT'));
+          } else if (res.statusCode >= 400) {
+            reject(new Error(`USDA_ERROR_${res.statusCode}`));
+          } else {
+            resolve(data);
+          }
+        } catch (e) {
+          reject(new Error('Invalid JSON from upstream'));
+        }
       });
     }).on('error', reject);
   });
@@ -54,8 +64,10 @@ router.get('/portions', async (req, res) => {
 
   const apiKey = process.env.USDA_FDC_API_KEY || 'DEMO_KEY';
 
-  // Step 1: search Foundation + SR Legacy first; fall back to Branded if empty
-  let fdcId = null;
+  // Single search call — Foundation+SR Legacy first, fall back to Branded if empty.
+  // The search response already includes foodPortions and foodNutrients for these
+  // data types, so no second detail call is needed.
+  let match = null;
   for (const dataType of ['Foundation,SR%20Legacy', 'Foundation,SR%20Legacy,Branded']) {
     const searchUrl =
       `https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(food.trim())}` +
@@ -68,34 +80,26 @@ router.get('/portions', async (req, res) => {
     }
     const foods = searchResult.foods || [];
     if (foods.length > 0) {
-      fdcId = foods[0].fdcId;
+      match = foods[0];
       break;
     }
   }
 
-  if (!fdcId) {
+  if (!match) {
     return res.status(404).json({ error: 'food_not_found', message: `No USDA entry found for "${food}"` });
-  }
-
-  // Step 2: fetch full food detail for accurate portions + nutrients
-  let detail;
-  try {
-    detail = await httpsGet(`https://api.nal.usda.gov/fdc/v1/food/${fdcId}?api_key=${apiKey}`);
-  } catch {
-    return res.status(502).json({ error: 'upstream_error', message: 'Failed to fetch food detail from USDA' });
   }
 
   // Per-100g macros (round to 1 decimal)
   const r1 = v => Math.round(v * 10) / 10;
   const per_100g = {
-    calories:  r1(getNutrient(detail.foodNutrients, NID.calories)),
-    fat_g:     r1(getNutrient(detail.foodNutrients, NID.fat)),
-    carbs_g:   r1(getNutrient(detail.foodNutrients, NID.carbs)),
-    protein_g: r1(getNutrient(detail.foodNutrients, NID.protein)),
+    calories:  r1(getNutrient(match.foodNutrients, NID.calories)),
+    fat_g:     r1(getNutrient(match.foodNutrients, NID.fat)),
+    carbs_g:   r1(getNutrient(match.foodNutrients, NID.carbs)),
+    protein_g: r1(getNutrient(match.foodNutrients, NID.protein)),
   };
 
-  // Build portions list
-  const rawPortions = (detail.foodPortions || [])
+  // Build portions list from search result's foodPortions
+  const rawPortions = (match.foodPortions || [])
     .map(p => ({
       label: (p.portionDescription || p.modifier || '').trim(),
       gram_weight: Math.round(p.gramWeight || 0),
@@ -115,8 +119,8 @@ router.get('/portions', async (req, res) => {
   const portions = [{ label: '100g', gram_weight: 100 }, ...deduped].slice(0, 6);
 
   const data = {
-    fdc_id: detail.fdcId,
-    food_name: detail.description,
+    fdc_id: match.fdcId,
+    food_name: match.description,
     source: 'USDA FoodData Central',
     per_100g,
     portions,
