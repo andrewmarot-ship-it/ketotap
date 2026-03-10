@@ -42,7 +42,7 @@ export default function DashboardPage() {
         presetsApi.list(),
       ]);
       setTargets(tRes.data);
-      setFoods(fRes.data);
+      setFoods([...fRes.data].sort((a, b) => a.name.localeCompare(b.name)));
       setLogs(lRes.data);
       setIsDayCompleted(cRes.data.completed);
       setPresets(pRes.data);

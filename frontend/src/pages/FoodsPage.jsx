@@ -75,7 +75,7 @@ export default function FoodsPage() {
 
   useEffect(() => {
     foodsApi.list()
-      .then(r => setFoods(r.data))
+      .then(r => setFoods([...r.data].sort((a, b) => a.name.localeCompare(b.name))))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
