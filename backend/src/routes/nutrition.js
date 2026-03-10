@@ -10,11 +10,12 @@ const cache = new Map();
 const CACHE_TTL_V1_MS = 24 * 60 * 60 * 1000;       // 24 hours (v1 lookup)
 const CACHE_TTL_V2_MS = 7 * 24 * 60 * 60 * 1000;   // 7 days  (v2 portions)
 
-// Purge expired entries once per hour so the Map doesn't grow unboundedly
+// Purge entries once per hour. Entries survive for 2×TTL so stale data is
+// available as a fallback when USDA is rate-limiting.
 setInterval(() => {
   const now = Date.now();
   for (const [k, v] of cache) {
-    if (v.expiresAt <= now) cache.delete(k);
+    if ((v.purgeAt ?? v.expiresAt) <= now) cache.delete(k);
   }
 }, 60 * 60 * 1000).unref();
 
@@ -77,10 +78,8 @@ router.get('/portions', async (req, res) => {
   const foodQ = food.trim();
   const cacheKey = `portions:${foodQ.toLowerCase()}`;
   const now = Date.now();
-  const cached = cache.get(cacheKey);
-  if (cached && cached.expiresAt > now) {
-    return res.json(cached.data);
-  }
+  const entry = cache.get(cacheKey);   // kept in scope as stale fallback
+  if (entry && entry.expiresAt > now) return res.json(entry.data);
 
   const apiKey = process.env.USDA_FDC_API_KEY || 'DEMO_KEY';
 
@@ -105,6 +104,10 @@ router.get('/portions', async (req, res) => {
   }
 
   if (!fdcId) {
+    if (lastSearchErr?.message === 'USDA_RATE_LIMIT' && entry) {
+      console.warn('[nutrition] Rate limited; serving stale cache for', cacheKey);
+      return res.json({ ...entry.data, stale: true });
+    }
     if (lastSearchErr) return upstreamErr(res, lastSearchErr);
     return res.status(404).json({ error: 'food_not_found', message: `No USDA entry found for "${foodQ}"` });
   }
@@ -114,6 +117,10 @@ router.get('/portions', async (req, res) => {
   try {
     detail = await httpsGet(`https://api.nal.usda.gov/fdc/v1/food/${fdcId}?api_key=${apiKey}`);
   } catch (err) {
+    if (err.message === 'USDA_RATE_LIMIT' && entry) {
+      console.warn('[nutrition] Rate limited; serving stale cache for', cacheKey);
+      return res.json({ ...entry.data, stale: true });
+    }
     return upstreamErr(res, err);
   }
 
@@ -154,7 +161,7 @@ router.get('/portions', async (req, res) => {
     portions,
   };
 
-  cache.set(cacheKey, { data, expiresAt: now + CACHE_TTL_V2_MS });
+  cache.set(cacheKey, { data, expiresAt: now + CACHE_TTL_V2_MS, purgeAt: now + 2 * CACHE_TTL_V2_MS });
   return res.json(data);
 });
 
@@ -200,10 +207,8 @@ router.get('/lookup', async (req, res) => {
 
   const cacheKey = `${food.trim().toLowerCase()}:${quantity.trim().toLowerCase()}`;
   const now = Date.now();
-  const cached = cache.get(cacheKey);
-  if (cached && cached.expiresAt > now) {
-    return res.json(cached.data);
-  }
+  const entry = cache.get(cacheKey);   // kept in scope as stale fallback
+  if (entry && entry.expiresAt > now) return res.json(entry.data);
 
   const apiKey = process.env.USDA_FDC_API_KEY || 'DEMO_KEY';
   const searchUrl =
@@ -214,6 +219,10 @@ router.get('/lookup', async (req, res) => {
   try {
     searchResult = await httpsGet(searchUrl);
   } catch (err) {
+    if (err.message === 'USDA_RATE_LIMIT' && entry) {
+      console.warn('[nutrition] Rate limited; serving stale cache for', cacheKey);
+      return res.json({ ...entry.data, stale: true });
+    }
     return upstreamErr(res, err);
   }
 
@@ -246,7 +255,7 @@ router.get('/lookup', async (req, res) => {
     carbs_g:   round1(getNutrientV1(match, NID.carbs)     * scaleFactor),
   };
 
-  cache.set(cacheKey, { data, expiresAt: now + CACHE_TTL_V1_MS });
+  cache.set(cacheKey, { data, expiresAt: now + CACHE_TTL_V1_MS, purgeAt: now + 2 * CACHE_TTL_V1_MS });
   return res.json(data);
 });
 
