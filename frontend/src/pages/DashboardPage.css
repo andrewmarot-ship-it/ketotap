@@ -14,13 +14,19 @@
   background: var(--bg);
 }
 
+/* Sticky top band — header + macro rings pinned together */
+.dash-sticky-top {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
 /* Header */
 .dash-header {
   background: var(--card);
   border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: 0;
-  z-index: 100;
 }
 
 .dash-header-inner {
@@ -123,7 +129,7 @@
   align-items: center;
   justify-content: space-around;
   padding: 14px 8px;
-  margin-bottom: 16px;
+  margin-bottom: 0;
 }
 
 .dash-complete {

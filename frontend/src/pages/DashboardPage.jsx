@@ -214,14 +214,25 @@ export default function DashboardPage() {
 
   return (
     <div className="dash-page">
-      <header className="dash-header">
-        <div className="dash-header-inner">
-          <div className="dash-brand">
-            <span className="dash-icon">⚡🥑</span>
-            <span className="dash-title">KetoTap</span>
+
+      <div className="dash-sticky-top">
+        <header className="dash-header">
+          <div className="dash-header-inner">
+            <div className="dash-brand">
+              <span className="dash-icon">⚡🥑</span>
+              <span className="dash-title">KetoTap</span>
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
+        {targets && (
+          <div className="macro-rings card">
+            <MacroBar label="Cal" current={Math.round(totals.calories)} target={targets.calories} unit="" color="var(--primary)" size={72} />
+            <MacroBar label="Fat" current={Math.round(totals.fat_g)} target={targets.fat_g} unit="g" color="#F39C12" size={60} />
+            <MacroBar label="Prot" current={Math.round(totals.protein_g)} target={targets.protein_g} unit="g" color="#3498DB" size={60} />
+            <MacroBar label="Carbs" current={Math.round(totals.carbs_g)} target={targets.carbs_g} unit="g" color={totals.carbs_g > targets.carbs_g ? 'var(--over-limit)' : totals.carbs_g > targets.carbs_g * 0.8 ? 'var(--warning)' : 'var(--primary)'} size={60} />
+          </div>
+        )}
+      </div>
 
       <main className="dash-main">
         <div className="dash-date-nav">
@@ -235,14 +246,6 @@ export default function DashboardPage() {
           <button className="date-nav-btn" onClick={() => setViewDate(d => offsetDate(d, 1))} disabled={viewDate === today}>›</button>
         </div>
 
-        {targets && (
-          <div className="macro-rings card">
-            <MacroBar label="Cal" current={Math.round(totals.calories)} target={targets.calories} unit="" color="var(--primary)" size={72} />
-            <MacroBar label="Fat" current={Math.round(totals.fat_g)} target={targets.fat_g} unit="g" color="#F39C12" size={60} />
-            <MacroBar label="Prot" current={Math.round(totals.protein_g)} target={targets.protein_g} unit="g" color="#3498DB" size={60} />
-            <MacroBar label="Carbs" current={Math.round(totals.carbs_g)} target={targets.carbs_g} unit="g" color={totals.carbs_g > targets.carbs_g ? 'var(--over-limit)' : totals.carbs_g > targets.carbs_g * 0.8 ? 'var(--warning)' : 'var(--primary)'} size={60} />
-          </div>
-        )}
 
         <div className="dash-complete">
           <button
