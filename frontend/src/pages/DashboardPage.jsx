@@ -5,6 +5,7 @@ import MacroBar from '../components/MacroBar';
 import FoodGrid from '../components/FoodGrid';
 import PresetsRow from '../components/PresetsRow';
 import PresetModal from '../components/PresetModal';
+import PortionPickerSheet from '../components/PortionPickerSheet';
 import BottomNav from '../components/BottomNav';
 import './DashboardPage.css';
 
@@ -28,6 +29,10 @@ export default function DashboardPage() {
   const [completing, setCompleting] = useState(false);
   const [presets, setPresets] = useState([]);
   const [showPresetModal, setShowPresetModal] = useState(false);
+
+  // Portion Picker state
+  const [pickerFood, setPickerFood] = useState(null); // food to show in picker
+  const [pickerLog,  setPickerLog]  = useState(null); // null = add mode, log = edit mode
 
   const [viewDate, setViewDate] = useState(todayStr);
   const today = todayStr();
@@ -55,13 +60,16 @@ export default function DashboardPage() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // Compute today's totals from logs
-  const totals = logs.reduce((acc, log) => ({
-    calories: acc.calories + log.calories * log.servings,
-    fat_g: acc.fat_g + log.fat_g * log.servings,
-    protein_g: acc.protein_g + log.protein_g * log.servings,
-    carbs_g: acc.carbs_g + log.carbs_g * log.servings,
-  }), { calories: 0, fat_g: 0, protein_g: 0, carbs_g: 0 });
+  // Compute today's totals from logs, factoring in portion_multiplier
+  const totals = logs.reduce((acc, log) => {
+    const m = log.portion_multiplier ?? 1;
+    return {
+      calories:  acc.calories  + log.calories  * log.servings * m,
+      fat_g:     acc.fat_g     + log.fat_g     * log.servings * m,
+      protein_g: acc.protein_g + log.protein_g * log.servings * m,
+      carbs_g:   acc.carbs_g   + log.carbs_g   * log.servings * m,
+    };
+  }, { calories: 0, fat_g: 0, protein_g: 0, carbs_g: 0 });
 
   // Smart suggestions — activate within 15% of calorie target
   const SUGGESTION_THRESHOLD = 0.85;
@@ -92,14 +100,44 @@ export default function DashboardPage() {
     blockedIds = new Set(foods.filter(f => f.calories > remainingCal).map(f => f.id));
   }
 
-  async function handleAdd(food) {
+  // Opens the Portion Picker for a fresh add
+  function handleAdd(food) {
+    if (blockedIds.has(food.id)) return;
+    setPickerFood(food);
+    setPickerLog(null);
+  }
+
+  // Opens the Portion Picker in edit mode (tap emoji on logged tile)
+  function handleEdit(food) {
+    const log = logs.find(l => l.food_id === food.id);
+    if (!log) return;
+    setPickerFood(food);
+    setPickerLog(log);
+  }
+
+  // Called when user confirms a multiplier in the Portion Picker
+  async function handlePickerConfirm(multiplier) {
+    const food = pickerFood;
+    const log  = pickerLog;
+    setPickerFood(null);
+    setPickerLog(null);
+
     try {
-      await logsApi.add(food.id, viewDate);
+      if (log) {
+        await logsApi.updateMultiplier(log.id, multiplier);
+      } else {
+        await logsApi.add(food.id, viewDate, multiplier);
+      }
       const res = await logsApi.getDay(viewDate);
       setLogs(res.data);
     } catch (e) {
-      console.error('handleAdd failed', e.response?.status, e.response?.data, e);
+      console.error('handlePickerConfirm failed', e.response?.status, e.response?.data, e);
     }
+  }
+
+  function handlePickerDismiss() {
+    setPickerFood(null);
+    setPickerLog(null);
   }
 
   async function handleRemove(food) {
@@ -246,7 +284,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="dash-section-header">
-          <span className="dash-section-label">Tap + to log · − to remove</span>
+          <span className="dash-section-label">Tap + to log · − to remove · tap emoji to edit portion</span>
           {logs.length > 0 && (
             <button className="btn-clear-all" onClick={handleClearAll}>Clear All</button>
           )}
@@ -256,6 +294,7 @@ export default function DashboardPage() {
           logs={logs}
           onAdd={handleAdd}
           onRemove={handleRemove}
+          onEdit={handleEdit}
           recommendedIds={recommendedIds}
           blockedIds={blockedIds}
         />
@@ -269,6 +308,15 @@ export default function DashboardPage() {
         presets={presets}
         onPresetsChange={setPresets}
       />
+
+      {pickerFood && (
+        <PortionPickerSheet
+          food={pickerFood}
+          existingLog={pickerLog}
+          onConfirm={handlePickerConfirm}
+          onDismiss={handlePickerDismiss}
+        />
+      )}
 
       <BottomNav />
     </div>

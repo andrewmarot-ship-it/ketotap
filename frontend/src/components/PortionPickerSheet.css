@@ -1,0 +1,183 @@
+/* ── Overlay / backdrop ─────────────────────────────────────────────────────── */
+.pp-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.4);
+  animation: pp-fade-in 220ms ease-out forwards;
+}
+
+@keyframes pp-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Sheet ──────────────────────────────────────────────────────────────────── */
+.pp-sheet {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--card);
+  border-radius: 20px 20px 0 0;
+  padding: 24px 22px 36px;
+  animation: pp-slide-up 220ms cubic-bezier(0.0, 0.0, 0.2, 1) forwards;
+}
+
+@keyframes pp-slide-up {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* ── Zone 1: Food identity header ───────────────────────────────────────────── */
+.pp-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.pp-emoji {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #D6EAD8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.pp-food-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pp-food-name {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pp-food-serving {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* ── Zone 2: Portion chips ──────────────────────────────────────────────────── */
+.pp-chips {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.pp-chip {
+  flex: 1;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+  padding: 10px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.pp-chip-label {
+  font-size: 18px;
+  font-weight: 700;
+  color: inherit;
+}
+
+.pp-chip-grams {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+/* ── Zone 3: Macro preview grid ─────────────────────────────────────────────── */
+.pp-macros {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.pp-macro-chip {
+  background: var(--bg);
+  border-radius: 14px;
+  border: 1.5px solid var(--border);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+}
+
+.pp-macro-value {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.pp-macro-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-secondary);
+  margin-top: 3px;
+}
+
+.pp-macro-base {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+/* ── Zone 4: Action bar ─────────────────────────────────────────────────────── */
+.pp-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+.pp-cta {
+  width: 100%;
+  padding: 14px;
+  border-radius: 14px;
+  border: none;
+  background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+  color: white;
+  font-size: 15px;
+  font-weight: 700;
+  box-shadow: 0 4px 18px rgba(39, 174, 96, 0.4);
+  cursor: pointer;
+  transition: transform 100ms ease, opacity 100ms ease;
+}
+
+.pp-cta:active {
+  transform: scale(0.97);
+  opacity: 0.9;
+}
+
+.pp-cancel {
+  display: block;
+  margin-top: 12px;
+  padding: 4px 12px;
+  border: none;
+  background: none;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.pp-cancel:hover {
+  color: var(--text-primary);
+}

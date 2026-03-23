@@ -90,6 +90,11 @@ try {
   db.exec("ALTER TABLE foods ADD COLUMN emoji TEXT NOT NULL DEFAULT '🍽️'");
 } catch (_) { /* column already exists */ }
 
+// Add portion_multiplier to daily_logs (additive migration, safe to run every startup)
+try {
+  db.exec('ALTER TABLE daily_logs ADD COLUMN portion_multiplier REAL NOT NULL DEFAULT 1');
+} catch (_) { /* column already exists */ }
+
 // Add nutrition provenance columns (additive migration, safe to run every startup)
 const nutritionCols = [
   "ALTER TABLE foods ADD COLUMN nutrition_source TEXT",

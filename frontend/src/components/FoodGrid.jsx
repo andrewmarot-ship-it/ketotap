@@ -1,12 +1,14 @@
 import './FoodGrid.css';
 
-function FoodTile({ food, servings, onAdd, onRemove, suggested, blocked }) {
+function FoodTile({ food, servings, onAdd, onRemove, onEdit, suggested, blocked }) {
   const tileClass = [
     'food-tile',
     servings > 0 ? 'food-tile--active' : '',
     suggested ? 'food-tile--suggested' : '',
     blocked ? 'food-tile--blocked' : '',
   ].filter(Boolean).join(' ');
+
+  const emojiTappable = servings > 0 && onEdit;
 
   return (
     <div className={tileClass}>
@@ -37,8 +39,16 @@ function FoodTile({ food, servings, onAdd, onRemove, suggested, blocked }) {
         <div className="food-tile-count">×{servings}</div>
       )}
 
-      {/* Food image or emoji */}
-      <div className="food-tile-img-wrap">
+      {/* Food image or emoji — tappable when food is logged (opens portion editor) */}
+      <div
+        className="food-tile-img-wrap"
+        onClick={emojiTappable ? () => onEdit(food) : undefined}
+        style={emojiTappable ? { cursor: 'pointer' } : undefined}
+        role={emojiTappable ? 'button' : undefined}
+        aria-label={emojiTappable ? `Edit ${food.name} portion` : undefined}
+        tabIndex={emojiTappable ? 0 : undefined}
+        onKeyDown={emojiTappable ? (e) => { if (e.key === 'Enter' || e.key === ' ') onEdit(food); } : undefined}
+      >
         {food.image_url ? (
           <img
             src={food.image_url}
@@ -64,7 +74,7 @@ function FoodTile({ food, servings, onAdd, onRemove, suggested, blocked }) {
   );
 }
 
-export default function FoodGrid({ foods, logs, onAdd, onRemove, recommendedIds = new Set(), blockedIds = new Set() }) {
+export default function FoodGrid({ foods, logs, onAdd, onRemove, onEdit, recommendedIds = new Set(), blockedIds = new Set() }) {
   const servingsMap = {};
   for (const log of logs) {
     servingsMap[log.food_id] = log.servings;
@@ -88,6 +98,7 @@ export default function FoodGrid({ foods, logs, onAdd, onRemove, recommendedIds 
           servings={servingsMap[food.id] || 0}
           onAdd={onAdd}
           onRemove={onRemove}
+          onEdit={onEdit}
           suggested={recommendedIds.has(food.id)}
           blocked={blockedIds.has(food.id)}
         />
