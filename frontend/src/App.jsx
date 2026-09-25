@@ -31,7 +31,7 @@ function BetaGate({ children }) {
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
-  if (loading) return <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, color: '#666' }}>Loading…</div>;
+  if (loading) return <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, color: 'var(--text-secondary)' }}>Loading…</div>;
   return user ? children : <Navigate to="/login" replace />;
 }
 

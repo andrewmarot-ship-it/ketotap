@@ -58,9 +58,14 @@ export default function ProfilePage() {
 
   return (
     <div className="profile-page">
-      <header className="profile-header">
-        <h1>Profile</h1>
-        <button className="nav-logout" onClick={logout}>Logout</button>
+      <header className="page-header">
+        <div className="page-header-inner">
+          <div className="page-heading">
+            <span className="section-label">⚡🥑 KetoTap</span>
+            <h1 className="page-title">Profile</h1>
+          </div>
+          <button className="nav-logout" onClick={logout}>Logout</button>
+        </div>
       </header>
 
       <div className="profile-content">

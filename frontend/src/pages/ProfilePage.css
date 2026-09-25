@@ -3,30 +3,11 @@
   background: var(--bg);
 }
 
-.profile-header {
-  background: var(--card);
-  border-bottom: 1px solid var(--border);
-  padding: 12px 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  gap: 12px;
-}
-
-.profile-header h1 {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--deep-accent);
-}
-
 .nav-logout {
-  padding: 6px 12px;
-  border-radius: 8px;
+  padding: 7px 12px;
+  border-radius: 10px;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 700;
   color: var(--over-limit);
   background: transparent;
 }

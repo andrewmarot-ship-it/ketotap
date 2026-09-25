@@ -3,23 +3,6 @@
   background: var(--bg);
 }
 
-.history-header {
-  background: var(--card);
-  border-bottom: 1px solid var(--border);
-  padding: 12px 16px;
-  display: flex;
-  align-items: center;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-.history-header h1 {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--deep-accent);
-}
-
 .history-loading, .history-empty {
   text-align: center;
   padding: 24px 16px;
@@ -45,9 +28,9 @@
 }
 
 .cal-nav-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--deep-accent);
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text-primary);
 }
 
 .cal-nav-btn {
@@ -253,7 +236,7 @@
 .macro-toggle-btn {
   padding: 5px 12px;
   border-radius: 20px;
-  border: 2px solid var(--toggle-color, #ccc);
+  border: 2px solid var(--toggle-color, var(--bg-deep));
   background: transparent;
   font-size: 12px;
   font-weight: 600;
@@ -263,7 +246,7 @@
 }
 
 .macro-toggle-btn.active {
-  background: var(--toggle-color, #ccc);
+  background: var(--toggle-color, var(--bg-deep));
   color: #fff;
 }
 
@@ -282,9 +265,9 @@
 }
 
 .detail-header h3 {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--deep-accent);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-primary);
   margin-bottom: 6px;
 }
 

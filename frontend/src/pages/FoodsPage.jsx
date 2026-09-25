@@ -210,9 +210,14 @@ export default function FoodsPage() {
 
   return (
     <div className="foods-page">
-      <header className="foods-header">
-        <h1>Food Inventory</h1>
-        <button className="btn-add" onClick={openNew}>+ Add Food</button>
+      <header className="page-header">
+        <div className="page-header-inner">
+          <div className="page-heading">
+            <span className="section-label">⚡🥑 KetoTap</span>
+            <h1 className="page-title">Food Inventory</h1>
+          </div>
+          <button className="btn-add" onClick={openNew}>+ Add Food</button>
+        </div>
       </header>
 
       {loading ? (
@@ -228,10 +233,10 @@ export default function FoodsPage() {
                 <span className="food-row-name">{food.name}</span>
                 <span className="food-row-serving">{food.serving_description}</span>
                 <div className="food-row-macros">
-                  <span>{food.calories} kcal</span>
-                  <span>{food.fat_g}g fat</span>
-                  <span>{food.protein_g}g protein</span>
-                  <span>{food.carbs_g}g carbs</span>
+                  <span className="m-cal">{food.calories} kcal</span>
+                  <span className="m-fat">{food.fat_g}g fat</span>
+                  <span className="m-protein">{food.protein_g}g protein</span>
+                  <span className="m-carbs">{food.carbs_g}g carbs</span>
                 </div>
               </div>
               <div className="food-row-actions">

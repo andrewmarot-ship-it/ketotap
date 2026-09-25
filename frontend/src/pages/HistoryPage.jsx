@@ -106,12 +106,12 @@ function MacroChart({ dayData, visibleMacros, onToggleMacro }) {
           <LineChart data={chartData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
             <XAxis
               dataKey="day"
-              tick={{ fontSize: 11, fill: '#888' }}
+              tick={{ fontSize: 11, fill: '#7A6B52' }}
               tickLine={false}
               axisLine={false}
             />
             <YAxis
-              tick={{ fontSize: 11, fill: '#888' }}
+              tick={{ fontSize: 11, fill: '#7A6B52' }}
               tickLine={false}
               axisLine={false}
               width={48}
@@ -219,8 +219,13 @@ export default function HistoryPage() {
 
   return (
     <div className="history-page">
-      <header className="history-header">
-        <h1>History</h1>
+      <header className="page-header">
+        <div className="page-header-inner">
+          <div className="page-heading">
+            <span className="section-label">⚡🥑 KetoTap</span>
+            <h1 className="page-title">History</h1>
+          </div>
+        </div>
       </header>
 
       <div className="history-content">
