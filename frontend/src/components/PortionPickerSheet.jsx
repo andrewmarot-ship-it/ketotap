@@ -33,10 +33,11 @@ const MACRO_FIELDS = [
   { key: 'calories',  label: 'Calories',  unit: 'kcal', color: '#5A7A5E' },
 ];
 
-// Extract gram weight from serving description like "½ avocado (~100 g)" or "1 tbsp (14 g)"
+// Extract gram weight from serving description like "½ avocado (~100 g)" or "1 tbsp (14 g)".
+// Returns null if no gram value is found — callers should hide gram labels in that case.
 function parseBaseGrams(servingDescription) {
   const match = (servingDescription || '').match(/(\d+)\s*g/i);
-  return match ? parseInt(match[1], 10) : 100;
+  return match ? parseInt(match[1], 10) : null;
 }
 
 function ctaLabel(multiplier, isEditMode) {
@@ -97,10 +98,12 @@ export default function PortionPickerSheet({ food, existingLog, onConfirm, onDis
                 } : {}}
                 onClick={() => setSelectedMultiplier(chip.multiplier)}
                 aria-pressed={isSelected}
-                aria-label={`${chip.label} — ${Math.round(baseGrams * chip.multiplier)}g, ${chipAdjusted.calories} calories`}
+                aria-label={`${chip.label}${baseGrams !== null ? ` — ${Math.round(baseGrams * chip.multiplier)}g` : ''}, ${chipAdjusted.calories} calories`}
               >
                 <span className="pp-chip-label">{chip.label}</span>
-                <span className="pp-chip-grams">{Math.round(baseGrams * chip.multiplier)}g</span>
+                {baseGrams !== null && (
+                  <span className="pp-chip-grams">{Math.round(baseGrams * chip.multiplier)}g</span>
+                )}
               </button>
             );
           })}

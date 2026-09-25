@@ -100,9 +100,20 @@ export default function DashboardPage() {
     blockedIds = new Set(foods.filter(f => f.calories > remainingCal).map(f => f.id));
   }
 
-  // Opens the Portion Picker for a fresh add
-  function handleAdd(food) {
+  // Opens the Portion Picker for a fresh add, or increments servings if already logged
+  async function handleAdd(food) {
     if (blockedIds.has(food.id)) return;
+    const existing = logs.find(l => l.food_id === food.id);
+    if (existing) {
+      try {
+        await logsApi.add(food.id, viewDate, existing.portion_multiplier ?? 1);
+        const res = await logsApi.getDay(viewDate);
+        setLogs(res.data);
+      } catch (e) {
+        console.error('handleAdd failed', e);
+      }
+      return;
+    }
     setPickerFood(food);
     setPickerLog(null);
   }
