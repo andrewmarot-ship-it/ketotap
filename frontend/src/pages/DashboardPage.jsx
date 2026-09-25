@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { targetsApi, foodsApi, logsApi, presetsApi, intakeApi } from '../api/client';
 import IntakeRow from '../components/IntakeRow';
+import CompactMacroBar from '../components/CompactMacroBar';
 import MacroBar from '../components/MacroBar';
 import FoodGrid from '../components/FoodGrid';
 import PresetsRow from '../components/PresetsRow';
@@ -12,6 +13,24 @@ import './DashboardPage.css';
 
 function todayStr() {
   return new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD in local time
+}
+
+const TIP_KEY = 'kt_tip_foods_dismissed';
+
+function readTipDismissed() {
+  try { return localStorage.getItem(TIP_KEY) === '1'; } catch { return false; }
+}
+
+const FILTERS = [
+  { key: 'all',     label: 'All' },
+  { key: 'logged',  label: 'Logged' },
+  { key: 'fat',     label: 'High fat' },
+  { key: 'protein', label: 'High protein' },
+];
+
+// Share of a food's calories coming from one macro (fat 9 kcal/g, protein 4 kcal/g)
+function calorieShare(food, grams, kcalPerGram) {
+  return food.calories > 0 ? (grams * kcalPerGram) / food.calories : 0;
 }
 
 function offsetDate(dateStr, days) {
@@ -31,6 +50,21 @@ export default function DashboardPage() {
   const [presets, setPresets] = useState([]);
   const [showPresetModal, setShowPresetModal] = useState(false);
   const [intake, setIntake] = useState({ water: 0, sodium: 0, potassium: 0, magnesium: 0 });
+  const [tipDismissed, setTipDismissed] = useState(readTipDismissed);
+  const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState('all');
+
+  // Full rings scroll away with the page; a compact bar takes over once they're out of view
+  const [ringsEl, setRingsEl] = useState(null);
+  const [ringsOutOfView, setRingsOutOfView] = useState(false);
+  useEffect(() => {
+    if (!ringsEl) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      setRingsOutOfView(!entry.isIntersecting && entry.boundingClientRect.top < 0);
+    });
+    observer.observe(ringsEl);
+    return () => observer.disconnect();
+  }, [ringsEl]);
 
   // Portion Picker state
   const [pickerFood, setPickerFood] = useState(null); // food to show in picker
@@ -238,6 +272,31 @@ export default function DashboardPage() {
     }
   }
 
+  function dismissTip() {
+    setTipDismissed(true);
+    try { localStorage.setItem(TIP_KEY, '1'); } catch { /* storage unavailable */ }
+  }
+
+  const loggedIds = new Set(logs.map(l => l.food_id));
+  const q = query.trim().toLowerCase();
+  const visibleFoods = foods.filter(f => {
+    if (q && !f.name.toLowerCase().includes(q)) return false;
+    if (filter === 'logged')  return loggedIds.has(f.id);
+    if (filter === 'fat')     return calorieShare(f, f.fat_g, 9) >= 0.6;
+    if (filter === 'protein') return calorieShare(f, f.protein_g, 4) >= 0.4;
+    return true;
+  });
+
+  const carbsColor = targets && (totals.carbs_g > targets.carbs_g
+    ? 'var(--over-limit)'
+    : totals.carbs_g > targets.carbs_g * 0.8 ? 'var(--warning)' : 'var(--primary)');
+  const macros = targets ? [
+    { label: 'Cal',   current: Math.round(totals.calories),  target: targets.calories,  unit: '',  color: 'var(--primary)', size: 72 },
+    { label: 'Fat',   current: Math.round(totals.fat_g),     target: targets.fat_g,     unit: 'g', color: '#F39C12',        size: 60 },
+    { label: 'Prot',  current: Math.round(totals.protein_g), target: targets.protein_g, unit: 'g', color: '#3498DB',        size: 60 },
+    { label: 'Carbs', current: Math.round(totals.carbs_g),   target: targets.carbs_g,   unit: 'g', color: carbsColor,       size: 60 },
+  ] : [];
+
   const formatDate = () => {
     const d = new Date(viewDate + 'T00:00:00');
     return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
@@ -258,14 +317,15 @@ export default function DashboardPage() {
           </div>
         </header>
         {targets && (
-          <div className="macro-rings card">
-            <MacroBar label="Cal" current={Math.round(totals.calories)} target={targets.calories} unit="" color="var(--primary)" size={72} />
-            <MacroBar label="Fat" current={Math.round(totals.fat_g)} target={targets.fat_g} unit="g" color="#F39C12" size={60} />
-            <MacroBar label="Prot" current={Math.round(totals.protein_g)} target={targets.protein_g} unit="g" color="#3498DB" size={60} />
-            <MacroBar label="Carbs" current={Math.round(totals.carbs_g)} target={targets.carbs_g} unit="g" color={totals.carbs_g > targets.carbs_g ? 'var(--over-limit)' : totals.carbs_g > targets.carbs_g * 0.8 ? 'var(--warning)' : 'var(--primary)'} size={60} />
+          <div className="macro-rings card" ref={setRingsEl}>
+            {macros.map(m => (
+              <MacroBar key={m.label} label={m.label} current={m.current} target={m.target} unit={m.unit} color={m.color} size={m.size} />
+            ))}
           </div>
         )}
       </div>
+
+      {targets && <CompactMacroBar macros={macros} visible={ringsOutOfView} />}
 
       <main className="dash-main">
         <div className="dash-date-nav">
@@ -279,16 +339,6 @@ export default function DashboardPage() {
           <button className="date-nav-btn" onClick={() => setViewDate(d => offsetDate(d, 1))} disabled={viewDate === today}>›</button>
         </div>
 
-
-        <div className="dash-complete">
-          <button
-            className={`complete-btn ${isDayCompleted ? 'complete-btn--done' : ''}`}
-            onClick={handleCompleteDay}
-            disabled={completing}
-          >
-            {isDayCompleted ? '✓ Day Completed' : 'Complete Day'}
-          </button>
-        </div>
 
         {suggestionsActive && (
           <div className={`smart-banner ${overTarget ? 'smart-banner--over' : ''}`}>
@@ -334,20 +384,70 @@ export default function DashboardPage() {
         )}
 
         <div className="dash-section-header">
-          <span className="dash-section-label">Tap + to log · − to remove · tap emoji to edit portion</span>
+          <span className="dash-section-label">Foods</span>
           {logs.length > 0 && (
             <button className="btn-clear-all" onClick={handleClearAll}>Clear All</button>
           )}
         </div>
-        <FoodGrid
-          foods={foods}
-          logs={logs}
-          onAdd={handleAdd}
-          onRemove={handleRemove}
-          onEdit={handleEdit}
-          recommendedIds={recommendedIds}
-          blockedIds={blockedIds}
-        />
+
+        {!tipDismissed && (
+          <div className="foods-tip">
+            <p><strong>Tip:</strong> tap <strong>+</strong> to log a food. Tap its emoji to change the portion.</p>
+            <button onClick={dismissTip}>Got it</button>
+          </div>
+        )}
+
+        {foods.length > 0 && (
+          <div className="food-filters">
+            <input
+              id="food-search"
+              className="food-search"
+              type="search"
+              placeholder="Search foods"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              aria-label="Search foods"
+            />
+            <div className="filter-chips" role="group" aria-label="Filter foods">
+              {FILTERS.map(f => (
+                <button
+                  key={f.key}
+                  className={`filter-chip${filter === f.key ? ' filter-chip--on' : ''}`}
+                  onClick={() => setFilter(f.key)}
+                  aria-pressed={filter === f.key}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {foods.length > 0 && visibleFoods.length === 0 ? (
+          <p className="food-filter-empty">
+            {filter === 'logged' && !q ? 'Nothing logged yet on this day.' : 'No foods match. Try another search or filter.'}
+          </p>
+        ) : (
+          <FoodGrid
+            foods={visibleFoods}
+            logs={logs}
+            onAdd={handleAdd}
+            onRemove={handleRemove}
+            onEdit={handleEdit}
+            recommendedIds={recommendedIds}
+            blockedIds={blockedIds}
+          />
+        )}
+
+        <div className="dash-complete">
+          <button
+            className={`complete-btn ${isDayCompleted ? 'complete-btn--done' : ''}`}
+            onClick={handleCompleteDay}
+            disabled={completing}
+          >
+            {isDayCompleted ? '✓ Day Completed' : 'Complete Day'}
+          </button>
+        </div>
       </main>
 
       <PresetModal

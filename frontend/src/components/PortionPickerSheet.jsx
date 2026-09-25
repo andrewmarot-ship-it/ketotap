@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { applyMultiplier } from '../utils/macroCalculator';
+import { applyMultiplier, formatPortion } from '../utils/macroCalculator';
 import './PortionPickerSheet.css';
 
 const CHIPS = [
@@ -26,6 +26,11 @@ const CHIPS = [
   },
 ];
 
+const PRESET_MULTIPLIERS = CHIPS.map(c => c.multiplier);
+const CUSTOM_MIN = 0.25;
+const CUSTOM_MAX = 10;
+const CUSTOM_STEP = 0.25;
+
 const MACRO_FIELDS = [
   { key: 'fat_g',     label: 'Fat',       unit: 'g',    color: '#A67C52' },
   { key: 'protein_g', label: 'Protein',   unit: 'g',    color: '#27AE60' },
@@ -43,13 +48,18 @@ function parseBaseGrams(servingDescription) {
 function ctaLabel(multiplier, isEditMode) {
   if (isEditMode) return 'Update Serving';
   if (multiplier === 0.5) return 'Add ½ Serving';
-  if (multiplier === 2)   return 'Add 2 Servings';
-  return 'Add 1 Serving';
+  if (multiplier === 1)   return 'Add 1 Serving';
+  return `Add ${multiplier} ${multiplier < 1 ? 'Serving' : 'Servings'}`;
 }
 
 export default function PortionPickerSheet({ food, existingLog, onConfirm, onDismiss }) {
   const defaultMultiplier = existingLog?.portion_multiplier ?? 1;
   const [selectedMultiplier, setSelectedMultiplier] = useState(defaultMultiplier);
+  const [customMode, setCustomMode] = useState(!PRESET_MULTIPLIERS.includes(defaultMultiplier));
+
+  function stepCustom(delta) {
+    setSelectedMultiplier(m => Math.min(CUSTOM_MAX, Math.max(CUSTOM_MIN, m + delta)));
+  }
 
   const isEditMode = !!existingLog;
   const base = {
@@ -85,7 +95,7 @@ export default function PortionPickerSheet({ food, existingLog, onConfirm, onDis
         {/* Zone 2: Portion selector */}
         <div className="pp-chips" role="group" aria-label="Portion size">
           {CHIPS.map(chip => {
-            const isSelected = selectedMultiplier === chip.multiplier;
+            const isSelected = !customMode && selectedMultiplier === chip.multiplier;
             const chipAdjusted = applyMultiplier(base, chip.multiplier);
             return (
               <button
@@ -96,7 +106,7 @@ export default function PortionPickerSheet({ food, existingLog, onConfirm, onDis
                   borderColor: chip.selectedBorder,
                   color: chip.selectedText,
                 } : {}}
-                onClick={() => setSelectedMultiplier(chip.multiplier)}
+                onClick={() => { setCustomMode(false); setSelectedMultiplier(chip.multiplier); }}
                 aria-pressed={isSelected}
                 aria-label={`${chip.label}${baseGrams !== null ? ` — ${Math.round(baseGrams * chip.multiplier)}g` : ''}, ${chipAdjusted.calories} calories`}
               >
@@ -107,7 +117,48 @@ export default function PortionPickerSheet({ food, existingLog, onConfirm, onDis
               </button>
             );
           })}
+          <button
+            className="pp-chip"
+            style={customMode ? {
+              background: 'var(--card-hover)',
+              borderColor: 'var(--deep-accent)',
+              color: 'var(--deep-accent)',
+            } : {}}
+            onClick={() => setCustomMode(true)}
+            aria-pressed={customMode}
+            aria-label="Custom amount"
+          >
+            <span className="pp-chip-label">Other</span>
+            <span className="pp-chip-grams">{customMode ? `${formatPortion(selectedMultiplier)}×` : 'custom'}</span>
+          </button>
         </div>
+
+        {customMode && (
+          <div className="pp-stepper">
+            <button
+              className="pp-step-btn"
+              onClick={() => stepCustom(-CUSTOM_STEP)}
+              disabled={selectedMultiplier <= CUSTOM_MIN}
+              aria-label="Less"
+            >
+              −
+            </button>
+            <div className="pp-step-value" aria-live="polite">
+              <strong>{selectedMultiplier}×</strong>
+              <span>
+                {baseGrams !== null ? `${Math.round(baseGrams * selectedMultiplier)} g · ` : ''}steps of ¼
+              </span>
+            </div>
+            <button
+              className="pp-step-btn"
+              onClick={() => stepCustom(CUSTOM_STEP)}
+              disabled={selectedMultiplier >= CUSTOM_MAX}
+              aria-label="More"
+            >
+              +
+            </button>
+          </div>
+        )}
 
         {/* Zone 3: Live macro preview */}
         <div className="pp-macros">

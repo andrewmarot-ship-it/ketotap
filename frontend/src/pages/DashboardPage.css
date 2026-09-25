@@ -14,11 +14,8 @@
   background: var(--bg);
 }
 
-/* Sticky top band — header + macro rings pinned together */
+/* Top band — header + full macro rings (CompactMacroBar takes over on scroll) */
 .dash-sticky-top {
-  position: sticky;
-  top: 0;
-  z-index: 100;
   background: var(--bg);
   border-bottom: 1px solid var(--border);
 }
@@ -135,7 +132,7 @@
 .dash-complete {
   display: flex;
   justify-content: center;
-  margin-bottom: 20px;
+  padding-top: 4px;
 }
 
 .complete-btn {
@@ -244,4 +241,90 @@
 .smart-banner-sub {
   font-size: 12px;
   color: var(--text-secondary);
+}
+
+/* One-time tip above the food grid */
+.foods-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--card-hover);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.foods-tip p {
+  flex: 1;
+  line-height: 1.4;
+}
+
+.foods-tip button {
+  background: none;
+  color: var(--deep-accent);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+/* Search + filter chips */
+.food-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.food-search {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  font-size: 16px; /* 16px stops iOS zooming on focus */
+  color: var(--text-primary);
+}
+
+.food-search:focus {
+  border-color: var(--primary);
+}
+
+.filter-chips {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.filter-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.filter-chip {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.filter-chip--on {
+  background: var(--deep-accent);
+  border-color: var(--deep-accent);
+  color: white;
+}
+
+.food-filter-empty {
+  text-align: center;
+  padding: 28px 16px;
+  color: var(--text-secondary);
+  font-size: 14px;
 }

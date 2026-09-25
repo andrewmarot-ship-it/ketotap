@@ -6,6 +6,11 @@ const router = express.Router();
 
 router.use(authMiddleware);
 
+// Portions run from 0.25x to 10x in quarter steps
+function isValidMultiplier(m) {
+  return Number.isFinite(m) && m >= 0.25 && m <= 10 && Number.isInteger(m * 4);
+}
+
 // Get daily log for a date (default today)
 router.get('/', (req, res) => {
   const date = req.query.date || new Date().toISOString().split('T')[0];
@@ -101,7 +106,10 @@ router.post('/', (req, res) => {
   if (!food) return res.status(404).json({ error: 'Food not found' });
 
   const logDate = date || new Date().toISOString().split('T')[0];
-  const multiplier = parseFloat(portion_multiplier) || 1;
+  const multiplier = parseFloat(portion_multiplier);
+  if (!isValidMultiplier(multiplier)) {
+    return res.status(400).json({ error: 'portion_multiplier must be between 0.25 and 10, in steps of 0.25' });
+  }
 
   // Check if there's already an entry for this food today, and increment servings
   const existing = db.prepare('SELECT id, servings FROM daily_logs WHERE user_id = ? AND date = ? AND food_id = ?').get(req.user.id, logDate, food_id);
@@ -131,8 +139,8 @@ router.post('/', (req, res) => {
 router.patch('/:id', (req, res) => {
   const { portion_multiplier } = req.body;
   const multiplier = parseFloat(portion_multiplier);
-  if (![0.5, 1, 2].includes(multiplier)) {
-    return res.status(400).json({ error: 'portion_multiplier must be 0.5, 1, or 2' });
+  if (!isValidMultiplier(multiplier)) {
+    return res.status(400).json({ error: 'portion_multiplier must be between 0.25 and 10, in steps of 0.25' });
   }
 
   const log = db.prepare('SELECT * FROM daily_logs WHERE id = ? AND user_id = ?').get(req.params.id, req.user.id);

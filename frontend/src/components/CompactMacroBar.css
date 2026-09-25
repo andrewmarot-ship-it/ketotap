@@ -1,0 +1,87 @@
+/* Fixed overlay, so showing it never shifts the page content */
+.cmb {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 150;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 4px 12px -8px rgba(0, 0, 0, 0.35);
+  padding-top: env(safe-area-inset-top, 0px);
+  opacity: 0;
+  transform: translateY(-100%);
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.cmb--visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cmb { transition: none; }
+}
+
+.cmb-inner {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 8px 16px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cmb-brand {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--deep-accent);
+}
+
+.cmb-bars {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.cmb-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.cmb-top {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  column-gap: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.cmb-nums {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+.cmb-nums b {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.cmb-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.cmb-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.25s ease;
+}

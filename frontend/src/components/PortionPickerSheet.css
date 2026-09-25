@@ -73,7 +73,7 @@
 /* ── Zone 2: Portion chips ──────────────────────────────────────────────────── */
 .pp-chips {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   margin-bottom: 20px;
 }
 
@@ -98,6 +98,54 @@
 }
 
 .pp-chip-grams {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+/* ── Custom amount stepper ─────────────────────────────────────────────────── */
+.pp-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: -8px 0 20px;
+  padding: 8px;
+  border-radius: 14px;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+}
+
+.pp-step-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--deep-accent);
+  flex-shrink: 0;
+}
+
+.pp-step-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.pp-step-value {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.pp-step-value strong {
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.pp-step-value span {
   font-size: 11px;
   color: var(--text-secondary);
 }

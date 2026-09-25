@@ -1,11 +1,5 @@
+import { formatPortion } from '../utils/macroCalculator';
 import './FoodGrid.css';
-
-function formatCount(n) {
-  const whole = Math.floor(n);
-  const half = n - whole >= 0.5;
-  if (!half) return String(whole);
-  return whole === 0 ? '½' : `${whole}½`;
-}
 
 function FoodTile({ food, servings, onAdd, onRemove, onEdit, suggested, blocked }) {
   const tileClass = [
@@ -43,7 +37,7 @@ function FoodTile({ food, servings, onAdd, onRemove, onEdit, suggested, blocked 
 
       {/* Serving count between the buttons */}
       {servings > 0 && (
-        <div className="food-tile-count">×{formatCount(servings)}</div>
+        <div className="food-tile-count">×{formatPortion(servings)}</div>
       )}
 
       {/* Food image or emoji — tappable when food is logged (opens portion editor) */}
@@ -76,6 +70,9 @@ function FoodTile({ food, servings, onAdd, onRemove, onEdit, suggested, blocked 
         <span className="food-tile-name">{food.name}</span>
         <span className="food-tile-serving">{food.serving_description}</span>
         <span className="food-tile-cals">{food.calories} kcal</span>
+        {servings > 0 && (
+          <span className="food-tile-eaten">{Math.round(food.calories * servings)} eaten</span>
+        )}
       </div>
     </div>
   );
