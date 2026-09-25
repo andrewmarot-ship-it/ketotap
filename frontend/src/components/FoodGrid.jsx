@@ -1,5 +1,12 @@
 import './FoodGrid.css';
 
+function formatCount(n) {
+  const whole = Math.floor(n);
+  const half = n - whole >= 0.5;
+  if (!half) return String(whole);
+  return whole === 0 ? '½' : `${whole}½`;
+}
+
 function FoodTile({ food, servings, onAdd, onRemove, onEdit, suggested, blocked }) {
   const tileClass = [
     'food-tile',
@@ -36,7 +43,7 @@ function FoodTile({ food, servings, onAdd, onRemove, onEdit, suggested, blocked 
 
       {/* Serving count between the buttons */}
       {servings > 0 && (
-        <div className="food-tile-count">×{servings}</div>
+        <div className="food-tile-count">×{formatCount(servings)}</div>
       )}
 
       {/* Food image or emoji — tappable when food is logged (opens portion editor) */}
@@ -77,7 +84,7 @@ function FoodTile({ food, servings, onAdd, onRemove, onEdit, suggested, blocked 
 export default function FoodGrid({ foods, logs, onAdd, onRemove, onEdit, recommendedIds = new Set(), blockedIds = new Set() }) {
   const servingsMap = {};
   for (const log of logs) {
-    servingsMap[log.food_id] = log.servings;
+    servingsMap[log.food_id] = (servingsMap[log.food_id] || 0) + log.servings * (log.portion_multiplier ?? 1);
   }
 
   if (foods.length === 0) {
