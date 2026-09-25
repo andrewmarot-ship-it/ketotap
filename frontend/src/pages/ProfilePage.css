@@ -138,3 +138,18 @@
   font-size: 14px;
   color: var(--text-primary);
 }
+
+.targets-subsection {
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+
+.targets-subsection h3 {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.target-row--2 {
+  grid-template-columns: 1fr 1fr;
+}

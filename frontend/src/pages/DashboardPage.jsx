@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { targetsApi, foodsApi, logsApi, presetsApi } from '../api/client';
+import { targetsApi, foodsApi, logsApi, presetsApi, intakeApi } from '../api/client';
+import IntakeRow from '../components/IntakeRow';
 import MacroBar from '../components/MacroBar';
 import FoodGrid from '../components/FoodGrid';
 import PresetsRow from '../components/PresetsRow';
@@ -29,6 +30,7 @@ export default function DashboardPage() {
   const [completing, setCompleting] = useState(false);
   const [presets, setPresets] = useState([]);
   const [showPresetModal, setShowPresetModal] = useState(false);
+  const [intake, setIntake] = useState({ water: 0, sodium: 0, potassium: 0, magnesium: 0 });
 
   // Portion Picker state
   const [pickerFood, setPickerFood] = useState(null); // food to show in picker
@@ -39,14 +41,16 @@ export default function DashboardPage() {
 
   const loadData = useCallback(async () => {
     try {
-      const [tRes, fRes, lRes, cRes, pRes] = await Promise.all([
+      const [tRes, fRes, lRes, cRes, pRes, iRes] = await Promise.all([
         targetsApi.get(),
         foodsApi.list(),
         logsApi.getDay(viewDate),
         logsApi.isCompleted(viewDate),
         presetsApi.list(),
+        intakeApi.getDay(viewDate),
       ]);
       setTargets(tRes.data);
+      setIntake(iRes.data);
       setFoods([...fRes.data].sort((a, b) => a.name.localeCompare(b.name)));
       setLogs(lRes.data);
       setIsDayCompleted(cRes.data.completed);
@@ -194,6 +198,24 @@ export default function DashboardPage() {
     }
   }
 
+  async function handleIntakeAdd(kind) {
+    try {
+      const res = await intakeApi.add(kind, viewDate);
+      setIntake(res.data);
+    } catch (e) {
+      console.error('intake add failed', e);
+    }
+  }
+
+  async function handleIntakeUndo(kind) {
+    try {
+      const res = await intakeApi.undo(kind, viewDate);
+      setIntake(res.data);
+    } catch (e) {
+      console.error('intake undo failed', e);
+    }
+  }
+
   async function handleClearAll() {
     if (logs.length === 0) return;
     try {
@@ -296,6 +318,20 @@ export default function DashboardPage() {
             onManage={() => setShowPresetModal(true)}
           />
         </div>
+
+        {targets && (
+          <div className="intake-section">
+            <div className="dash-section-header">
+              <span className="dash-section-label">Water &amp; Electrolytes</span>
+            </div>
+            <IntakeRow
+              intake={intake}
+              targets={targets}
+              onAdd={handleIntakeAdd}
+              onUndo={handleIntakeUndo}
+            />
+          </div>
+        )}
 
         <div className="dash-section-header">
           <span className="dash-section-label">Tap + to log · − to remove · tap emoji to edit portion</span>

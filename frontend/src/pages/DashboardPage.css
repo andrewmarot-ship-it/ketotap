@@ -171,6 +171,10 @@
   cursor: default;
 }
 
+.intake-section {
+  margin-bottom: 16px;
+}
+
 .dash-section-header {
   display: flex;
   align-items: center;

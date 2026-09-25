@@ -95,6 +95,30 @@ try {
   db.exec('ALTER TABLE daily_logs ADD COLUMN portion_multiplier REAL NOT NULL DEFAULT 1');
 } catch (_) { /* column already exists */ }
 
+// Water & electrolyte tracking (each row is one tap)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS daily_intake (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    date TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    amount REAL NOT NULL,
+    timestamp TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  );
+  CREATE INDEX IF NOT EXISTS idx_daily_intake_user_date ON daily_intake(user_id, date);
+`);
+
+const intakeTargetCols = [
+  'ALTER TABLE targets ADD COLUMN water_ml INTEGER NOT NULL DEFAULT 2500',
+  'ALTER TABLE targets ADD COLUMN sodium_mg INTEGER NOT NULL DEFAULT 3000',
+  'ALTER TABLE targets ADD COLUMN potassium_mg INTEGER NOT NULL DEFAULT 3500',
+  'ALTER TABLE targets ADD COLUMN magnesium_mg INTEGER NOT NULL DEFAULT 350',
+];
+for (const stmt of intakeTargetCols) {
+  try { db.exec(stmt); } catch (_) { /* column already exists */ }
+}
+
 // Add nutrition provenance columns (additive migration, safe to run every startup)
 const nutritionCols = [
   "ALTER TABLE foods ADD COLUMN nutrition_source TEXT",

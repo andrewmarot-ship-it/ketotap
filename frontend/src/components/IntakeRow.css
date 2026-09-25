@@ -1,0 +1,93 @@
+.intake-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.intake-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.intake-card--done {
+  background: var(--card-hover);
+}
+
+.intake-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.intake-emoji {
+  font-size: 18px;
+}
+
+.intake-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.intake-amount {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.intake-amount strong {
+  font-size: 15px;
+  color: var(--text-primary);
+}
+
+.intake-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.intake-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.25s ease;
+}
+
+.intake-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.intake-btn {
+  height: 30px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.intake-btn--minus {
+  width: 30px;
+  flex-shrink: 0;
+  background: var(--bg);
+  color: var(--text-secondary);
+}
+
+.intake-btn--minus:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.intake-btn--plus {
+  flex: 1;
+  background: var(--card-hover);
+  color: var(--deep-accent);
+  border: 1px solid var(--border);
+}
+
+.intake-btn--plus:active {
+  background: var(--border);
+}

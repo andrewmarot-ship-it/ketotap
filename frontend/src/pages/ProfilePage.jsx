@@ -6,7 +6,10 @@ import './ProfilePage.css';
 
 export default function ProfilePage() {
   const { user, logout } = useAuth();
-  const [form, setForm] = useState({ calories: '', fat_g: '', protein_g: '', carbs_g: '' });
+  const [form, setForm] = useState({
+    calories: '', fat_g: '', protein_g: '', carbs_g: '',
+    water_l: '', sodium_mg: '', potassium_mg: '', magnesium_mg: '',
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState('');
@@ -19,6 +22,10 @@ export default function ProfilePage() {
         fat_g: r.data.fat_g,
         protein_g: r.data.protein_g,
         carbs_g: r.data.carbs_g,
+        water_l: r.data.water_ml / 1000,
+        sodium_mg: r.data.sodium_mg,
+        potassium_mg: r.data.potassium_mg,
+        magnesium_mg: r.data.magnesium_mg,
       }))
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -35,6 +42,10 @@ export default function ProfilePage() {
         fat_g: Number(form.fat_g),
         protein_g: Number(form.protein_g),
         carbs_g: Number(form.carbs_g),
+        water_ml: Math.round(Number(form.water_l) * 1000),
+        sodium_mg: Number(form.sodium_mg),
+        potassium_mg: Number(form.potassium_mg),
+        magnesium_mg: Number(form.magnesium_mg),
       });
       setSuccess('Targets saved!');
       setTimeout(() => setSuccess(''), 3000);
@@ -128,6 +139,38 @@ export default function ProfilePage() {
                     />
                     <span className="target-unit">g</span>
                   </div>
+                </div>
+              </div>
+
+              <div className="targets-subsection">
+                <h3>Water &amp; Electrolytes</h3>
+                <p className="profile-subtitle">
+                  General keto guidance, not medical advice. Check with your doctor
+                  if you have blood pressure, kidney, or heart conditions.
+                </p>
+                <div className="target-row target-row--2">
+                  {[
+                    { key: 'water_l',      label: 'Water',     unit: 'L',  min: 0.5, step: 0.1 },
+                    { key: 'sodium_mg',    label: 'Sodium',    unit: 'mg', min: 1,   step: 100 },
+                    { key: 'potassium_mg', label: 'Potassium', unit: 'mg', min: 1,   step: 100 },
+                    { key: 'magnesium_mg', label: 'Magnesium', unit: 'mg', min: 1,   step: 10 },
+                  ].map(f => (
+                    <div key={f.key} className="target-field">
+                      <label>{f.label}</label>
+                      <div className="target-input-wrap">
+                        <input
+                          className="input"
+                          type="number"
+                          min={f.min}
+                          step={f.step}
+                          value={form[f.key]}
+                          onChange={e => setForm(prev => ({ ...prev, [f.key]: e.target.value }))}
+                          required
+                        />
+                        <span className="target-unit">{f.unit}</span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
 

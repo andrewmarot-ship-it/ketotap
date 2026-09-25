@@ -57,6 +57,12 @@ export const nutritionApi = {
   portions: (food)           => api.get('/nutrition/portions', { params: { food } }),
 };
 
+export const intakeApi = {
+  getDay: (date)       => api.get('/intake', { params: { date } }),
+  add:    (kind, date) => api.post('/intake', { kind, date }),
+  undo:   (kind, date) => api.delete('/intake/last', { params: { kind, date } }),
+};
+
 export const presetsApi = {
   list: () => api.get('/presets'),
   create: (preset) => api.post('/presets', preset),
