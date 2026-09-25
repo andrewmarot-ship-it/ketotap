@@ -26,3 +26,32 @@ export function formatPortion(n) {
   if (!glyph) return String(Math.round(n * 10) / 10);
   return whole === 0 ? glyph : `${whole}${glyph}`;
 }
+
+function clamp01(x) {
+  return Math.min(1, Math.max(0, x));
+}
+
+// 0–100 score for how keto the food logged so far is. Measures proportions, not
+// quantity, so it doesn't sit low early in the day. Returns null when nothing is logged.
+//   Net carbs  (50 pts): full while at or under the limit, down to 0 at 2x the limit.
+//   Fat share  (30 pts): full at 65%+ of macro calories, down to 0 at 40%.
+//   Protein    (20 pts): full between 15% and 35% of macro calories, -1 per point outside.
+export function ketoScore(totals, targets) {
+  const fatKcal = totals.fat_g * 9;
+  const proteinKcal = totals.protein_g * 4;
+  const carbKcal = totals.carbs_g * 4;
+  const macroKcal = fatKcal + proteinKcal + carbKcal;
+  if (macroKcal <= 0 || !targets) return null;
+
+  const limit = targets.carbs_g || 20;
+  const carbPts = 50 * clamp01(1 - (totals.carbs_g - limit) / limit);
+
+  const fatShare = fatKcal / macroKcal;
+  const fatPts = 30 * clamp01((fatShare - 0.4) / 0.25);
+
+  const proteinPct = (proteinKcal / macroKcal) * 100;
+  const outside = proteinPct < 15 ? 15 - proteinPct : proteinPct > 35 ? proteinPct - 35 : 0;
+  const proteinPts = Math.max(0, 20 - outside);
+
+  return Math.round(carbPts + fatPts + proteinPts);
+}

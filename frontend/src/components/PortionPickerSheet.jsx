@@ -14,8 +14,8 @@ const CHIPS = [
     multiplier: 1,
     label: '1×',
     selectedBg: '#D6EAD8',
-    selectedBorder: '#27AE60',
-    selectedText: '#27AE60',
+    selectedBorder: '#4A7C59',
+    selectedText: '#4A7C59',
   },
   {
     multiplier: 2,
@@ -32,10 +32,10 @@ const CUSTOM_MAX = 10;
 const CUSTOM_STEP = 0.25;
 
 const MACRO_FIELDS = [
-  { key: 'fat_g',     label: 'Fat',       unit: 'g',    color: '#A67C52' },
-  { key: 'protein_g', label: 'Protein',   unit: 'g',    color: '#27AE60' },
+  { key: 'fat_g',     label: 'Fat',       unit: 'g',    color: '#7A5230' },
+  { key: 'protein_g', label: 'Protein',   unit: 'g',    color: '#4A7C59' },
   { key: 'carbs_g',   label: 'Net Carbs', unit: 'g',    color: '#C8A84B' },
-  { key: 'calories',  label: 'Calories',  unit: 'kcal', color: '#5A7A5E' },
+  { key: 'calories',  label: 'Calories',  unit: 'kcal', color: '#A67C52' },
 ];
 
 // Extract gram weight from serving description like "½ avocado (~100 g)" or "1 tbsp (14 g)".

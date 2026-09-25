@@ -192,6 +192,19 @@ export default function ProfilePage() {
             <li>🥦 <strong>Net Carbs:</strong> Under 20–25g/day</li>
           </ul>
         </div>
+
+        <div className="card profile-tip">
+          <h3>About your keto score</h3>
+          <p className="profile-subtitle" style={{ marginBottom: 8 }}>
+            A 0–100 score for how keto the food you've logged is so far. It looks at proportions, not how much
+            you've eaten, so it won't sit low in the morning.
+          </p>
+          <ul>
+            <li>🥦 <strong>Net carbs (50 pts):</strong> full marks at or under your limit</li>
+            <li>🧈 <strong>Fat (30 pts):</strong> full marks when fat is 65%+ of calories</li>
+            <li>🥩 <strong>Protein (20 pts):</strong> full marks at 15–35% of calories</li>
+          </ul>
+        </div>
       </div>
 
       <BottomNav />

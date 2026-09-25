@@ -1,10 +1,10 @@
 import './IntakeRow.css';
 
 const KINDS = [
-  { key: 'water',     label: 'Water',     emoji: '💧', target: 'water_ml',     color: '#3498DB', step: '250 ml' },
-  { key: 'sodium',    label: 'Sodium',    emoji: '🧂', target: 'sodium_mg',    color: '#A67C52', step: '500 mg' },
-  { key: 'potassium', label: 'Potassium', emoji: '🥑', target: 'potassium_mg', color: '#27AE60', step: '350 mg' },
-  { key: 'magnesium', label: 'Magnesium', emoji: '✨', target: 'magnesium_mg', color: '#C8A84B', step: '100 mg' },
+  { key: 'water',     label: 'Water',     emoji: '💧', target: 'water_ml',     color: 'var(--green-light)', step: '250 ml' },
+  { key: 'sodium',    label: 'Sodium',    emoji: '🧂', target: 'sodium_mg',    color: 'var(--brown-light)', step: '500 mg' },
+  { key: 'potassium', label: 'Potassium', emoji: '🥑', target: 'potassium_mg', color: 'var(--green)', step: '350 mg' },
+  { key: 'magnesium', label: 'Magnesium', emoji: '✨', target: 'magnesium_mg', color: 'var(--gold)', step: '100 mg' },
 ];
 
 const SIZE = 48;

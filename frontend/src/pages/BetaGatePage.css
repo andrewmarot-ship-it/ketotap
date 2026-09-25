@@ -1,6 +1,6 @@
 .beta-badge {
   display: inline-block;
-  background: linear-gradient(135deg, #2ECC71, #27AE60);
+  background: linear-gradient(135deg, #4A7C59, #3D6A4B);
   color: white;
   font-size: 11px;
   font-weight: 700;
@@ -13,6 +13,6 @@
 
 .beta-subtitle {
   font-size: 13px;
-  color: #7A9E7E;
+  color: #B0A088;
   margin-top: 6px;
 }

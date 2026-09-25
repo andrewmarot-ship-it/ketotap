@@ -133,12 +133,12 @@
 }
 
 .cal-cell--has-data {
-  background: rgba(46, 204, 113, 0.12);
+  background: rgba(74, 124, 89, 0.12);
   cursor: pointer;
 }
 
 .cal-cell--has-data:hover {
-  background: rgba(46, 204, 113, 0.22);
+  background: rgba(74, 124, 89, 0.22);
 }
 
 .cal-cell--today {
@@ -147,11 +147,11 @@
 
 .cal-cell--selected {
   border-color: var(--deep-accent);
-  background: rgba(27, 94, 32, 0.12) !important;
+  background: rgba(74, 124, 89, 0.12) !important;
 }
 
 .cal-cell--completed {
-  background: rgba(46, 204, 113, 0.25);
+  background: rgba(74, 124, 89, 0.25);
 }
 
 .cal-day-num {
@@ -200,7 +200,7 @@
   width: 14px;
   height: 14px;
   border-radius: 4px;
-  background: rgba(46, 204, 113, 0.25);
+  background: rgba(74, 124, 89, 0.25);
   flex-shrink: 0;
 }
 
@@ -233,7 +233,7 @@
 .tab-btn.active {
   border-color: var(--primary);
   color: var(--primary);
-  background: rgba(46, 204, 113, 0.08);
+  background: rgba(74, 124, 89, 0.08);
 }
 
 /* ── Chart ── */
@@ -310,7 +310,7 @@
   color: var(--primary);
   padding: 3px 8px;
   border-radius: 12px;
-  background: rgba(46, 204, 113, 0.12);
+  background: rgba(74, 124, 89, 0.12);
 }
 
 .detail-list {

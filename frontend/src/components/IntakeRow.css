@@ -1,5 +1,6 @@
 .intake-row {
   display: grid;
+  border-radius: 16px;
   grid-template-columns: repeat(4, 1fr);
   padding: 10px 4px 8px;
 }
@@ -54,9 +55,9 @@
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  color: var(--text-secondary);
+  background: var(--brown-pale);
+  border: 1px solid rgba(122, 82, 48, 0.25);
+  color: var(--brown);
   font-size: 14px;
   font-weight: 700;
   line-height: 1;

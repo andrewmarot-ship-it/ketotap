@@ -13,10 +13,10 @@ const MONTH_NAMES = [
 ];
 
 const MACRO_CONFIG = [
-  { key: 'calories', label: 'Calories', color: '#E74C3C' },
-  { key: 'fat_g',    label: 'Fat (g)',  color: '#F39C12' },
-  { key: 'protein_g', label: 'Protein (g)', color: '#2ECC71' },
-  { key: 'carbs_g',  label: 'Carbs (g)', color: '#3498DB' },
+  { key: 'calories', label: 'Calories', color: '#A67C52' },
+  { key: 'fat_g',    label: 'Fat (g)',  color: '#7A5230' },
+  { key: 'protein_g', label: 'Protein (g)', color: '#4A7C59' },
+  { key: 'carbs_g',  label: 'Carbs (g)', color: '#C8A84B' },
 ];
 
 function Calendar({ year, month, dayData, selectedDate, onSelectDate }) {
@@ -117,7 +117,7 @@ function MacroChart({ dayData, visibleMacros, onToggleMacro }) {
               width={48}
             />
             <Tooltip
-              contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e0e0e0' }}
+              contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #EDE8DC' }}
               labelFormatter={day => `Day ${day}`}
             />
             {MACRO_CONFIG.map(({ key, label, color }) =>

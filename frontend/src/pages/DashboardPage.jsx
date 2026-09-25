@@ -3,7 +3,8 @@ import { useAuth } from '../context/AuthContext';
 import { targetsApi, foodsApi, logsApi, presetsApi, intakeApi } from '../api/client';
 import IntakeRow from '../components/IntakeRow';
 import CompactMacroBar from '../components/CompactMacroBar';
-import MacroBar from '../components/MacroBar';
+import MacroChip from '../components/MacroChip';
+import { ketoScore } from '../utils/macroCalculator';
 import FoodGrid from '../components/FoodGrid';
 import PresetsRow from '../components/PresetsRow';
 import PresetModal from '../components/PresetModal';
@@ -31,6 +32,20 @@ const FILTERS = [
 // Share of a food's calories coming from one macro (fat 9 kcal/g, protein 4 kcal/g)
 function calorieShare(food, grams, kcalPerGram) {
   return food.calories > 0 ? (grams * kcalPerGram) / food.calories : 0;
+}
+
+function greeting() {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 18) return 'Good afternoon';
+  return 'Good evening';
+}
+
+function scoreTone(score) {
+  if (score === null) return 'none';
+  if (score >= 80) return 'good';
+  if (score >= 50) return 'fair';
+  return 'low';
 }
 
 function offsetDate(dateStr, days) {
@@ -287,15 +302,14 @@ export default function DashboardPage() {
     return true;
   });
 
-  const carbsColor = targets && (totals.carbs_g > targets.carbs_g
-    ? 'var(--over-limit)'
-    : totals.carbs_g > targets.carbs_g * 0.8 ? 'var(--warning)' : 'var(--primary)');
+  const carbsOver = targets && totals.carbs_g > targets.carbs_g;
   const macros = targets ? [
-    { label: 'Cal',   current: Math.round(totals.calories),  target: targets.calories,  unit: '',  color: 'var(--primary)', size: 72 },
-    { label: 'Fat',   current: Math.round(totals.fat_g),     target: targets.fat_g,     unit: 'g', color: '#F39C12',        size: 60 },
-    { label: 'Prot',  current: Math.round(totals.protein_g), target: targets.protein_g, unit: 'g', color: '#3498DB',        size: 60 },
-    { label: 'Carbs', current: Math.round(totals.carbs_g),   target: targets.carbs_g,   unit: 'g', color: carbsColor,       size: 60 },
+    { label: 'Fat',       short: 'Fat',   emoji: '🧈', current: Math.round(totals.fat_g),     target: targets.fat_g,     unit: 'g', color: 'var(--macro-fat)',      bg: 'var(--brown-pale)' },
+    { label: 'Protein',   short: 'Prot',  emoji: '🥩', current: Math.round(totals.protein_g), target: targets.protein_g, unit: 'g', color: 'var(--macro-protein)',  bg: 'var(--green-pale)' },
+    { label: 'Net carbs', short: 'Carbs', emoji: '🥦', current: Math.round(totals.carbs_g),   target: targets.carbs_g,   unit: 'g', color: 'var(--macro-carbs)',    bg: 'var(--gold-pale)', over: carbsOver },
+    { label: 'Calories',  short: 'Cal',   emoji: '🔥', current: Math.round(totals.calories),  target: targets.calories,  unit: '',  color: 'var(--macro-calories)', bg: 'var(--brown-pale)' },
   ] : [];
+  const score = ketoScore(totals, targets);
 
   const formatDate = () => {
     const d = new Date(viewDate + 'T00:00:00');
@@ -307,19 +321,26 @@ export default function DashboardPage() {
   return (
     <div className="dash-page">
 
-      <div className="dash-sticky-top">
+      <div className="dash-top">
         <header className="dash-header">
           <div className="dash-header-inner">
-            <div className="dash-brand">
-              <span className="dash-icon">⚡🥑</span>
-              <span className="dash-title">KetoTap</span>
+            <div className="dash-greeting">
+              <span className="section-label">⚡🥑 KetoTap</span>
+              <span className="dash-hello">{viewDate === today ? greeting() : 'Looking back'}</span>
+            </div>
+            <div
+              className={`keto-score keto-score--${scoreTone(score)}`}
+              title="Keto score: net carbs under your limit (50), fat's share of calories (30), protein's share (20)"
+            >
+              <span className="section-label">Keto score</span>
+              <span className="keto-score-value">{score ?? '—'}</span>
             </div>
           </div>
         </header>
         {targets && (
-          <div className="macro-rings card" ref={setRingsEl}>
+          <div className="macro-chips" ref={setRingsEl}>
             {macros.map(m => (
-              <MacroBar key={m.label} label={m.label} current={m.current} target={m.target} unit={m.unit} color={m.color} size={m.size} />
+              <MacroChip key={m.label} {...m} />
             ))}
           </div>
         )}
@@ -358,7 +379,7 @@ export default function DashboardPage() {
 
         <div className="presets-section">
           <div className="presets-section-header">
-            <span className="dash-section-label" style={{ marginBottom: 0 }}>Presets</span>
+            <span className="section-label">Presets</span>
           </div>
           <PresetsRow
             presets={presets}
@@ -372,7 +393,7 @@ export default function DashboardPage() {
         {targets && (
           <div className="intake-section">
             <div className="dash-section-header">
-              <span className="dash-section-label">Water &amp; Electrolytes</span>
+              <span className="section-label">Water &amp; electrolytes</span>
             </div>
             <IntakeRow
               intake={intake}
@@ -384,7 +405,7 @@ export default function DashboardPage() {
         )}
 
         <div className="dash-section-header">
-          <span className="dash-section-label">Foods</span>
+          <span className="section-label">Foods</span>
           {logs.length > 0 && (
             <button className="btn-clear-all" onClick={handleClearAll}>Clear All</button>
           )}

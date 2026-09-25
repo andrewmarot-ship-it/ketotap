@@ -2,45 +2,19 @@ import { formatPortion } from '../utils/macroCalculator';
 import './FoodGrid.css';
 
 function FoodTile({ food, servings, onAdd, onRemove, onEdit, suggested, blocked }) {
+  const logged = servings > 0;
   const tileClass = [
     'food-tile',
-    servings > 0 ? 'food-tile--active' : '',
+    logged ? 'food-tile--active' : '',
     suggested ? 'food-tile--suggested' : '',
     blocked ? 'food-tile--blocked' : '',
   ].filter(Boolean).join(' ');
 
-  const emojiTappable = servings > 0 && onEdit;
+  const emojiTappable = logged && onEdit;
 
   return (
     <div className={tileClass}>
-
-      {/* Minus — top-left, only when a serving has been logged */}
-      {servings > 0 && (
-        <button
-          className="tile-adj tile-adj--minus"
-          onClick={() => onRemove(food)}
-          aria-label="Remove serving"
-        >
-          −
-        </button>
-      )}
-
-      {/* Plus — disabled when food would exceed calorie budget */}
-      <button
-        className="tile-adj tile-adj--plus"
-        onClick={() => !blocked && onAdd(food)}
-        aria-label="Add serving"
-        aria-disabled={blocked}
-      >
-        +
-      </button>
-
-      {/* Serving count between the buttons */}
-      {servings > 0 && (
-        <div className="food-tile-count">×{formatPortion(servings)}</div>
-      )}
-
-      {/* Food image or emoji — tappable when food is logged (opens portion editor) */}
+      {/* Emoji well — tappable when logged (opens portion editor) */}
       <div
         className="food-tile-img-wrap"
         onClick={emojiTappable ? () => onEdit(food) : undefined}
@@ -69,10 +43,28 @@ function FoodTile({ food, servings, onAdd, onRemove, onEdit, suggested, blocked 
       <div className="food-tile-info">
         <span className="food-tile-name">{food.name}</span>
         <span className="food-tile-serving">{food.serving_description}</span>
-        <span className="food-tile-cals">{food.calories} kcal</span>
-        {servings > 0 && (
-          <span className="food-tile-eaten">{Math.round(food.calories * servings)} eaten</span>
+        <span className="food-tile-cals">
+          {logged ? `${Math.round(food.calories * servings)} kcal eaten` : `${food.calories} kcal`}
+        </span>
+      </div>
+
+      <div className="food-tile-qty">
+        {logged && (
+          <>
+            <button className="qty-btn qty-btn--minus" onClick={() => onRemove(food)} aria-label={`Remove a serving of ${food.name}`}>
+              −
+            </button>
+            <span className="qty-count">{formatPortion(servings)}</span>
+          </>
         )}
+        <button
+          className="qty-btn qty-btn--plus"
+          onClick={() => !blocked && onAdd(food)}
+          aria-label={`Add ${food.name}`}
+          aria-disabled={blocked}
+        >
+          +
+        </button>
       </div>
     </div>
   );
