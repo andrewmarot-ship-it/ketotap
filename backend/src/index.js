@@ -17,7 +17,8 @@ app.use('/api/presets', require('./routes/presets'));
 app.use('/api/nutrition', require('./routes/nutrition'));
 app.use('/api/intake', require('./routes/intake'));
 
-app.get('/api/health', (req, res) => res.json({ status: 'ok', app: 'KetoTap' }));
+const { storageIsPersistent } = require('./db');
+app.get('/api/health', (req, res) => res.json({ status: 'ok', app: 'KetoTap', persistentStorage: storageIsPersistent }));
 
 // Serve frontend in production
 const frontendDist = path.join(__dirname, '..', '..', 'frontend', 'dist');

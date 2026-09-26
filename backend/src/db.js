@@ -2,7 +2,22 @@ const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
 
-const DB_PATH = process.env.DB_PATH || path.join(__dirname, '..', 'ketotap.db');
+// Prefer an explicit DB_PATH, then a Railway volume if one is attached. Without a volume,
+// Railway containers start empty on every deploy and all user data is lost.
+const volumePath = process.env.RAILWAY_VOLUME_MOUNT_PATH;
+const DB_PATH = process.env.DB_PATH
+  || (volumePath ? path.join(volumePath, 'ketotap.db') : path.join(__dirname, '..', 'ketotap.db'));
+
+const onRailway = Boolean(process.env.RAILWAY_ENVIRONMENT_NAME || process.env.RAILWAY_PROJECT_ID);
+const persistent = !onRailway || Boolean(volumePath && path.resolve(DB_PATH).startsWith(path.resolve(volumePath)));
+
+console.log(`[db] Using ${DB_PATH}`);
+if (!persistent) {
+  console.warn(
+    '[db] WARNING: database is not on a Railway volume. All data will be erased on the next deploy. ' +
+    'Attach a volume to this service (e.g. mounted at /data) and redeploy.'
+  );
+}
 
 fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
 
@@ -198,3 +213,4 @@ db.prepare(`
 `).run();
 
 module.exports = db;
+module.exports.storageIsPersistent = persistent;

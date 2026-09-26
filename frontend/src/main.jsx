@@ -8,3 +8,16 @@ createRoot(document.getElementById('root')).render(
     <App />
   </StrictMode>,
 )
+
+// Chrome fires this once, early; keep it so the Profile page can offer an Install button later
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  window.__ktInstallPrompt = e;
+  window.dispatchEvent(new Event('kt-install-available'));
+});
+
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(err => console.error('Service worker registration failed', err));
+  });
+}

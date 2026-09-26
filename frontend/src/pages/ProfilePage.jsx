@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { targetsApi } from '../api/client';
 import BottomNav from '../components/BottomNav';
+import InstallCard from '../components/InstallCard';
 import './ProfilePage.css';
 
 export default function ProfilePage() {
@@ -73,6 +74,8 @@ export default function ProfilePage() {
           <div className="profile-avatar">⚡🥑</div>
           <div className="profile-email">{user?.email}</div>
         </div>
+
+        <InstallCard />
 
         <div className="card">
           <h2>Daily Macro Targets</h2>

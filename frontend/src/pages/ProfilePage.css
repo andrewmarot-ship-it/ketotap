@@ -134,3 +134,43 @@
 .target-row--2 {
   grid-template-columns: 1fr 1fr;
 }
+
+.install-card {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.install-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-card);
+}
+
+.install-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.install-body h3 {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.install-body p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.install-btn {
+  width: auto;
+  align-self: flex-start;
+  padding: 10px 18px;
+  font-size: 14px;
+  margin-top: 2px;
+}
