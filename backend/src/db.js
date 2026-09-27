@@ -146,6 +146,15 @@ for (const stmt of nutritionCols) {
   try { db.exec(stmt); } catch (_) { /* column already exists */ }
 }
 
+// Barcode + fiber on foods. carbs_g stays NET carbs; fiber_g lets the form show total carbs.
+for (const stmt of [
+  'ALTER TABLE foods ADD COLUMN barcode TEXT',
+  'ALTER TABLE foods ADD COLUMN fiber_g REAL NOT NULL DEFAULT 0',
+]) {
+  try { db.exec(stmt); } catch (_) { /* column already exists */ }
+}
+db.exec('CREATE INDEX IF NOT EXISTS idx_foods_user_barcode ON foods(created_by_user_id, barcode)');
+
 // ── Default food list ────────────────────────────────────────────────────────
 const seedFoods = [
   { name: 'Olive Oil',                      serving_description: '1 tbsp (14 g)',           calories: 119, fat_g: 13.5, carbs_g: 0,   protein_g: 0,   emoji: '🫒' },

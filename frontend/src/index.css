@@ -199,7 +199,20 @@ a:hover {
   gap: 2px;
 }
 
-.page-heading .section-label {
+.page-heading .auto-badge {
+  display: inline-block;
+  background: var(--green-pale);
+  color: var(--green);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  border-radius: 6px;
+  padding: 1px 6px;
+  vertical-align: middle;
+}
+
+.section-label {
   font-size: 10px;
   color: var(--text-faint);
 }

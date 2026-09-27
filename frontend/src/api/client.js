@@ -55,6 +55,7 @@ export const logsApi = {
 export const nutritionApi = {
   lookup:   (food, quantity) => api.get('/nutrition/lookup',   { params: { food, quantity } }),
   portions: (food)           => api.get('/nutrition/portions', { params: { food } }),
+  barcode:  (code)           => api.get(`/nutrition/barcode/${encodeURIComponent(code)}`),
 };
 
 export const intakeApi = {

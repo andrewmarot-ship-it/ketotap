@@ -1,63 +1,21 @@
 import { useState, useEffect } from 'react';
-import { foodsApi, nutritionApi } from '../api/client';
+import { foodsApi, nutritionApi, logsApi } from '../api/client';
 import BottomNav from '../components/BottomNav';
+import ScanFlow from '../components/ScanFlow';
+import BarcodeIcon from '../components/BarcodeIcon';
+import { guessEmoji } from '../utils/emoji';
 import './FoodsPage.css';
 
 const EMPTY_FOOD = {
-  name: '', serving_description: '', calories: '', fat_g: '', protein_g: '', carbs_g: '', emoji: '',
+  name: '', serving_description: '', calories: '', fat_g: '', protein_g: '', total_carbs_g: '', fiber_g: '', emoji: '',
   nutrition_source: null, nutrition_source_id: null, nutrition_quantity_label: null,
   nutrition_auto_filled_at: null, nutrition_overridden: 0,
 };
 
-function guessEmoji(name) {
-  if (!name) return '🍽️';
-  const n = name.toLowerCase();
-  const map = [
-    [['olive oil', 'olive'],                                        '🫒'],
-    [['coconut oil', 'coconut'],                                    '🥥'],
-    [['butter', 'ghee'],                                            '🧈'],
-    [['cream', 'milk'],                                             '🥛'],
-    [['almond', 'walnut', 'pecan', 'cashew', 'pistachio', 'hazelnut', 'macadamia'], '🌰'],
-    [['nut butter', 'almond butter', 'peanut butter', 'tahini'],   '🌰'],
-    [['chia', 'hemp seed', 'flaxseed', 'flax seed', 'sunflower seed', 'pumpkin seed'], '🌱'],
-    [['seed', 'seeds'],                                             '🌱'],
-    [['chicken', 'turkey', 'duck', 'poultry'],                      '🍗'],
-    [['shrimp', 'prawn', 'lobster', 'crab', 'scallop'],             '🍤'],
-    [['salmon', 'tuna', 'fish', 'cod', 'halibut', 'sardine', 'mackerel', 'tilapia', 'trout'], '🐟'],
-    [['beef', 'steak', 'ground beef', 'brisket', 'ribeye', 'lamb', 'venison'], '🥩'],
-    [['bacon', 'pork', 'ham', 'sausage', 'pepperoni', 'salami', 'prosciutto'], '🥓'],
-    [['egg'],                                                       '🥚'],
-    [['cheese', 'feta', 'mozzarella', 'cheddar', 'brie', 'parmesan', 'gouda', 'marble'], '🧀'],
-    [['yogurt', 'yoghurt'],                                         '🍶'],
-    [['avocado'],                                                   '🥑'],
-    [['broccoli'],                                                  '🥦'],
-    [['pepper', 'capsicum', 'jalapeño', 'jalapeno', 'chili'],       '🫑'],
-    [['zucchini', 'courgette', 'cucumber'],                         '🥒'],
-    [['chocolate', 'cocoa', 'cacao'],                               '🍫'],
-    [['coffee', 'espresso', 'latte', 'cappuccino'],                 '☕'],
-    [['tea', 'matcha'],                                             '🍵'],
-    [['water', 'sparkling water'],                                  '💧'],
-    [['bread', 'toast', 'sourdough', 'bagel', 'pita'],              '🍞'],
-    [['rice', 'quinoa', 'couscous'],                                '🫙'],
-    [['oat', 'granola', 'cereal', 'muesli'],                        '🌾'],
-    [['pasta', 'noodle', 'spaghetti', 'linguine', 'fettuccine'],    '🍝'],
-    [['soup', 'broth', 'stock', 'bone broth'],                      '🍲'],
-    [['salad', 'lettuce', 'spinach', 'kale', 'arugula', 'mixed greens'], '🥗'],
-    [['tomato'],                                                    '🍅'],
-    [['lemon', 'lime'],                                             '🍋'],
-    [['orange', 'mandarin', 'tangerine', 'grapefruit'],             '🍊'],
-    [['strawberry', 'blueberry', 'raspberry', 'blackberry', 'berry'], '🍓'],
-    [['apple'],                                                     '🍎'],
-    [['banana'],                                                    '🍌'],
-    [['mushroom'],                                                  '🍄'],
-    [['onion', 'shallot', 'leek', 'garlic'],                        '🧅'],
-    [['protein powder', 'whey', 'protein shake', 'creatine', 'supplement'], '💪'],
-    [['oil', 'vinegar', 'sauce', 'dressing', 'mayo', 'mustard', 'ketchup'], '🫙'],
-  ];
-  for (const [keywords, emoji] of map) {
-    if (keywords.some(k => n.includes(k))) return emoji;
-  }
-  return '🍽️';
+const r1 = v => Math.round(v * 10) / 10;
+
+function todayStr() {
+  return new Date().toLocaleDateString('en-CA');
 }
 
 export default function FoodsPage() {
@@ -68,6 +26,8 @@ export default function FoodsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [scanning, setScanning] = useState(false);
+  const [notice, setNotice] = useState('');
 
   // Nutrition auto-fill state
   const [autoFilled, setAutoFilled] = useState(new Set());
@@ -110,7 +70,8 @@ export default function FoodsPage() {
       calories: food.calories,
       fat_g: food.fat_g,
       protein_g: food.protein_g,
-      carbs_g: food.carbs_g,
+      total_carbs_g: r1(food.carbs_g + (food.fiber_g || 0)),
+      fiber_g: food.fiber_g || 0,
       emoji: food.emoji || '🍽️',
     });
     setError('');
@@ -154,10 +115,11 @@ export default function FoodsPage() {
       calories:  r(per_100g.calories  * scale),
       fat_g:     r(per_100g.fat_g     * scale),
       protein_g: r(per_100g.protein_g * scale),
-      carbs_g:   r(per_100g.carbs_g   * scale),
+      total_carbs_g: r(per_100g.carbs_g * scale),
+      fiber_g:   r((per_100g.fiber_g ?? 0) * scale),
     }));
     setSelectedPortion(portion);
-    setAutoFilled(new Set(['calories', 'fat_g', 'protein_g', 'carbs_g']));
+    setAutoFilled(new Set(['calories', 'fat_g', 'protein_g', 'total_carbs_g', 'fiber_g']));
     setNutritionMeta({
       fdc_id: portionsData.fdc_id,
       food_name: portionsData.food_name,
@@ -170,18 +132,21 @@ export default function FoodsPage() {
     setError('');
     setSaving(true);
     try {
+      const { total_carbs_g, fiber_g, ...rest } = form;
+      const fiber = Number(fiber_g) || 0;
       const payload = {
-        ...form,
+        ...rest,
         calories:  Number(form.calories),
         fat_g:     Number(form.fat_g),
         protein_g: Number(form.protein_g),
-        carbs_g:   Number(form.carbs_g),
+        carbs_g:   Math.max(0, r1(Number(total_carbs_g) - fiber)),
+        fiber_g:   fiber,
         emoji: form.emoji || guessEmoji(form.name),
         nutrition_source:         nutritionMeta ? 'USDA_FDC' : null,
         nutrition_source_id:      nutritionMeta?.fdc_id?.toString() ?? null,
         nutrition_quantity_label: nutritionMeta?.quantity_label ?? null,
         nutrition_auto_filled_at: nutritionMeta ? new Date().toISOString() : null,
-        nutrition_overridden:     nutritionMeta && autoFilled.size < 4 ? 1 : 0,
+        nutrition_overridden:     nutritionMeta && autoFilled.size < 5 ? 1 : 0,
       };
       if (editing === 'new') {
         const res = await foodsApi.create(payload);
@@ -198,6 +163,36 @@ export default function FoodsPage() {
     }
   }
 
+  function flash(message) {
+    setNotice(message);
+    setTimeout(() => setNotice(''), 3500);
+  }
+
+  async function handleScanSave(food, andLog) {
+    setFoods(prev => [...prev, food].sort((a, b) => a.name.localeCompare(b.name)));
+    setScanning(false);
+    if (andLog) {
+      try {
+        await logsApi.add(food.id, todayStr(), 1);
+        flash(`Saved ${food.name} and logged 1 serving for today`);
+      } catch {
+        flash(`Saved ${food.name}, but couldn't log it. Log it from Home.`);
+      }
+    } else {
+      flash(`Saved ${food.name}`);
+    }
+  }
+
+  async function handleScanLog(food) {
+    setScanning(false);
+    try {
+      await logsApi.add(food.id, todayStr(), 1);
+      flash(`Logged 1 serving of ${food.name} for today`);
+    } catch {
+      flash(`Couldn't log ${food.name}. Try again from Home.`);
+    }
+  }
+
   async function handleDelete(food) {
     try {
       await foodsApi.delete(food.id);
@@ -208,6 +203,19 @@ export default function FoodsPage() {
     }
   }
 
+  const formTotal = parseFloat(form.total_carbs_g);
+  const formNetCarbs = Number.isFinite(formTotal)
+    ? Math.max(0, r1(formTotal - (parseFloat(form.fiber_g) || 0)))
+    : null;
+  const fieldProps = {
+    form,
+    autoFilled,
+    onChange: (field, value) => {
+      setForm(f => ({ ...f, [field]: value }));
+      setAutoFilled(prev => { const next = new Set(prev); next.delete(field); return next; });
+    },
+  };
+
   return (
     <div className="foods-page">
       <header className="page-header">
@@ -216,7 +224,12 @@ export default function FoodsPage() {
             <span className="section-label">⚡🥑 KetoTap</span>
             <h1 className="page-title">Food Inventory</h1>
           </div>
-          <button className="btn-add" onClick={openNew}>+ Add Food</button>
+          <div className="foods-header-actions">
+            <button className="btn-scan" onClick={() => setScanning(true)}>
+              <BarcodeIcon /> Scan
+            </button>
+            <button className="btn-add" onClick={openNew}>+ Add Food</button>
+          </div>
         </div>
       </header>
 
@@ -231,12 +244,15 @@ export default function FoodsPage() {
               </div>
               <div className="food-row-info">
                 <span className="food-row-name">{food.name}</span>
-                <span className="food-row-serving">{food.serving_description}</span>
+                <span className="food-row-serving">
+                  {food.serving_description}
+                  {food.barcode && <span className="food-row-scanned" title={`Barcode ${food.barcode}`}> · <BarcodeIcon size={11} /> scanned</span>}
+                </span>
                 <div className="food-row-macros">
                   <span className="m-cal">{food.calories} kcal</span>
                   <span className="m-fat">{food.fat_g}g fat</span>
                   <span className="m-protein">{food.protein_g}g protein</span>
-                  <span className="m-carbs">{food.carbs_g}g carbs</span>
+                  <span className="m-carbs">{food.carbs_g}g net carbs</span>
                 </div>
               </div>
               <div className="food-row-actions">
@@ -341,56 +357,18 @@ export default function FoodsPage() {
 
               {/* Macros */}
               <div className="field-row">
-                <div className="field">
-                  <label>
-                    Calories *
-                    {autoFilled.has('calories') && <span className="auto-badge">Auto</span>}
-                  </label>
-                  <input className="input" type="number" min="0" value={form.calories}
-                    onChange={e => {
-                      setForm(f => ({ ...f, calories: e.target.value }));
-                      setAutoFilled(prev => { const s = new Set(prev); s.delete('calories'); return s; });
-                    }}
-                    placeholder="kcal" required />
-                </div>
-                <div className="field">
-                  <label>
-                    Net Carbs (g) *
-                    {autoFilled.has('carbs_g') && <span className="auto-badge">Auto</span>}
-                  </label>
-                  <input className="input" type="number" min="0" step="0.1" value={form.carbs_g}
-                    onChange={e => {
-                      setForm(f => ({ ...f, carbs_g: e.target.value }));
-                      setAutoFilled(prev => { const s = new Set(prev); s.delete('carbs_g'); return s; });
-                    }}
-                    placeholder="g" required />
-                </div>
+                <MacroInput id="food-cal" label="Calories" field="calories" step="1" placeholder="kcal" {...fieldProps} />
+                <MacroInput id="food-fat" label="Fat (g)" field="fat_g" {...fieldProps} />
               </div>
-
               <div className="field-row">
-                <div className="field">
-                  <label>
-                    Fat (g) *
-                    {autoFilled.has('fat_g') && <span className="auto-badge">Auto</span>}
-                  </label>
-                  <input className="input" type="number" min="0" step="0.1" value={form.fat_g}
-                    onChange={e => {
-                      setForm(f => ({ ...f, fat_g: e.target.value }));
-                      setAutoFilled(prev => { const s = new Set(prev); s.delete('fat_g'); return s; });
-                    }}
-                    placeholder="g" required />
-                </div>
-                <div className="field">
-                  <label>
-                    Protein (g) *
-                    {autoFilled.has('protein_g') && <span className="auto-badge">Auto</span>}
-                  </label>
-                  <input className="input" type="number" min="0" step="0.1" value={form.protein_g}
-                    onChange={e => {
-                      setForm(f => ({ ...f, protein_g: e.target.value }));
-                      setAutoFilled(prev => { const s = new Set(prev); s.delete('protein_g'); return s; });
-                    }}
-                    placeholder="g" required />
+                <MacroInput id="food-protein" label="Protein (g)" field="protein_g" {...fieldProps} />
+                <MacroInput id="food-carbs" label="Total carbs (g)" field="total_carbs_g" {...fieldProps} />
+              </div>
+              <div className="field-row">
+                <MacroInput id="food-fiber" label="Fiber (g)" field="fiber_g" required={false} placeholder="0" {...fieldProps} />
+                <div className="net-carbs-box" aria-live="polite">
+                  <span>Net carbs</span>
+                  <strong>{formNetCarbs === null ? '—' : `${formNetCarbs} g`}</strong>
                 </div>
               </div>
 
@@ -425,7 +403,41 @@ export default function FoodsPage() {
         </div>
       )}
 
+      {scanning && (
+        <ScanFlow
+          foods={foods}
+          onSave={handleScanSave}
+          onLogExisting={handleScanLog}
+          onClose={() => setScanning(false)}
+        />
+      )}
+
+      {notice && <div className="foods-toast" role="status">{notice}</div>}
+
       <BottomNav />
+    </div>
+  );
+}
+
+function MacroInput({ id, label, field, form, autoFilled, onChange, step = '0.1', placeholder = 'g', required = true }) {
+  return (
+    <div className="field">
+      <label htmlFor={id}>
+        {label}{required ? ' *' : ''}
+        {autoFilled.has(field) && <span className="auto-badge">Auto</span>}
+      </label>
+      <input
+        id={id}
+        className="input"
+        type="number"
+        inputMode="decimal"
+        min="0"
+        step={step}
+        value={form[field]}
+        onChange={e => onChange(field, e.target.value)}
+        placeholder={placeholder}
+        required={required}
+      />
     </div>
   );
 }

@@ -3,6 +3,8 @@ import { useAuth } from '../context/AuthContext';
 import { targetsApi, foodsApi, logsApi, presetsApi, intakeApi } from '../api/client';
 import IntakeRow from '../components/IntakeRow';
 import CompactMacroBar from '../components/CompactMacroBar';
+import ScanFlow from '../components/ScanFlow';
+import BarcodeIcon from '../components/BarcodeIcon';
 import MacroChip from '../components/MacroChip';
 import { ketoScore } from '../utils/macroCalculator';
 import FoodGrid from '../components/FoodGrid';
@@ -68,6 +70,7 @@ export default function DashboardPage() {
   const [tipDismissed, setTipDismissed] = useState(readTipDismissed);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('all');
+  const [scanning, setScanning] = useState(false);
 
   // Full rings scroll away with the page; a compact bar takes over once they're out of view
   const [ringsEl, setRingsEl] = useState(null);
@@ -247,6 +250,27 @@ export default function DashboardPage() {
     }
   }
 
+  // Scanned foods log one serving; if already logged today, keep that entry's portion size
+  async function logOneServing(food) {
+    const existing = logs.find(l => l.food_id === food.id);
+    await logsApi.add(food.id, viewDate, existing?.portion_multiplier ?? 1);
+    const res = await logsApi.getDay(viewDate);
+    setLogs(res.data);
+  }
+
+  async function handleScanSave(food, andLog) {
+    setFoods(prev => [...prev, food].sort((a, b) => a.name.localeCompare(b.name)));
+    setScanning(false);
+    if (andLog) {
+      try { await logOneServing(food); } catch (e) { console.error('scan log failed', e); }
+    }
+  }
+
+  async function handleScanLog(food) {
+    setScanning(false);
+    try { await logOneServing(food); } catch (e) { console.error('scan log failed', e); }
+  }
+
   async function handleIntakeAdd(kind) {
     try {
       const res = await intakeApi.add(kind, viewDate);
@@ -418,8 +442,8 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {foods.length > 0 && (
-          <div className="food-filters">
+        <div className="food-filters">
+          <div className="food-search-row">
             <input
               id="food-search"
               className="food-search"
@@ -429,6 +453,12 @@ export default function DashboardPage() {
               onChange={e => setQuery(e.target.value)}
               aria-label="Search foods"
             />
+            <button className="btn-scan-home" onClick={() => setScanning(true)} aria-label="Scan a barcode">
+              <BarcodeIcon size={18} />
+              <span>Scan</span>
+            </button>
+          </div>
+          {foods.length > 0 && (
             <div className="filter-chips" role="group" aria-label="Filter foods">
               {FILTERS.map(f => (
                 <button
@@ -441,8 +471,8 @@ export default function DashboardPage() {
                 </button>
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {foods.length > 0 && visibleFoods.length === 0 ? (
           <p className="food-filter-empty">
@@ -479,6 +509,15 @@ export default function DashboardPage() {
         presets={presets}
         onPresetsChange={setPresets}
       />
+
+      {scanning && (
+        <ScanFlow
+          foods={foods}
+          onSave={handleScanSave}
+          onLogExisting={handleScanLog}
+          onClose={() => setScanning(false)}
+        />
+      )}
 
       {pickerFood && (
         <PortionPickerSheet
