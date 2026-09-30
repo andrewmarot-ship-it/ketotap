@@ -20,12 +20,14 @@ router.post('/register', (req, res) => {
     // Create default targets
     db.prepare('INSERT INTO targets (user_id, calories, fat_g, protein_g, carbs_g) VALUES (?, 2000, 150, 100, 20)').run(userId);
 
-    // Copy default seed foods into the new user's personal list
-    db.prepare(`
-      INSERT INTO foods (name, serving_description, calories, fat_g, protein_g, carbs_g, emoji, image_url, created_by_user_id)
-      SELECT name, serving_description, calories, fat_g, protein_g, carbs_g, emoji, image_url, ?
-      FROM foods WHERE created_by_user_id IS NULL
-    `).run(userId);
+    // New accounts get the current default list (with fiber), not the frozen global rows
+    const insertFood = db.prepare(`
+      INSERT INTO foods (name, serving_description, calories, fat_g, protein_g, carbs_g, fiber_g, emoji, created_by_user_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    for (const f of db.seedFoods) {
+      insertFood.run(f.name, f.serving_description, f.calories, f.fat_g, f.protein_g, f.carbs_g, f.fiber_g || 0, f.emoji, userId);
+    }
 
     const token = jwt.sign({ id: userId, email: email.toLowerCase() }, JWT_SECRET, { expiresIn: '30d' });
     res.json({ token, user: { id: userId, email: email.toLowerCase() } });

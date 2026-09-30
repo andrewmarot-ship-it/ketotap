@@ -156,15 +156,17 @@ for (const stmt of [
 db.exec('CREATE INDEX IF NOT EXISTS idx_foods_user_barcode ON foods(created_by_user_id, barcode)');
 
 // ── Default food list ────────────────────────────────────────────────────────
+// carbs_g is NET carbs (total − fiber). Figures are USDA SR Legacy scaled to the serving shown;
+// Lindt uses its own label. New accounts copy this list directly (see routes/auth.js).
 const seedFoods = [
   { name: 'Olive Oil',                      serving_description: '1 tbsp (14 g)',           calories: 119, fat_g: 13.5, carbs_g: 0,   protein_g: 0,   emoji: '🫒' },
   { name: 'Coconut Oil',                    serving_description: '1 tbsp (14 g)',           calories: 121, fat_g: 13.5, carbs_g: 0,   protein_g: 0,   emoji: '🥥' },
   { name: 'Unsalted Butter',                serving_description: '1 tbsp (14 g)',           calories: 102, fat_g: 11.5, carbs_g: 0,   protein_g: 0.1, emoji: '🧈' },
   { name: 'Heavy Cream (35%)',              serving_description: '1 tbsp (15 ml)',          calories: 51,  fat_g: 5.4,  carbs_g: 0.4, protein_g: 0.3, emoji: '🥛' },
-  { name: 'Roasted Salted Almonds',         serving_description: '⅓ cup (~47 g)',           calories: 277, fat_g: 24,   carbs_g: 8,   protein_g: 10,  emoji: '🌰' },
-  { name: 'Chia Seeds',                     serving_description: '1 tbsp (12 g)',           calories: 58,  fat_g: 3.7,  carbs_g: 5,   protein_g: 2,   emoji: '🌱' },
-  { name: 'Hemp Seeds',                     serving_description: '1 tbsp (10 g)',           calories: 55,  fat_g: 3.5,  carbs_g: 0.8, protein_g: 3.2, emoji: '🌿' },
-  { name: 'Almond Butter',                  serving_description: '1 tbsp (16 g)',           calories: 98,  fat_g: 9,    carbs_g: 3,   protein_g: 3.4, emoji: '🌰' },
+  { name: 'Roasted Salted Almonds',         serving_description: '⅓ cup (~47 g)',           calories: 277, fat_g: 24,   carbs_g: 4.8, fiber_g: 5.1,   protein_g: 10,  emoji: '🌰' },
+  { name: 'Chia Seeds',                     serving_description: '1 tbsp (12 g)',           calories: 58,  fat_g: 3.7,  carbs_g: 1,   fiber_g: 4.1,   protein_g: 2,   emoji: '🌱' },
+  { name: 'Hemp Seeds',                     serving_description: '1 tbsp (10 g)',           calories: 55,  fat_g: 3.5,  carbs_g: 0.5, fiber_g: 0.4, protein_g: 3.2, emoji: '🌿' },
+  { name: 'Almond Butter',                  serving_description: '1 tbsp (16 g)',           calories: 98,  fat_g: 9,    carbs_g: 1.4, fiber_g: 1.6,   protein_g: 3.4, emoji: '🌰' },
   { name: 'Chicken Breast',                 serving_description: '1 breast (~174 g)',       calories: 284, fat_g: 6.2,  carbs_g: 0,   protein_g: 53,  emoji: '🍗' },
   { name: 'Salmon Fillet',                  serving_description: '1 fillet (~198 g)',       calories: 412, fat_g: 27,   carbs_g: 0,   protein_g: 40,  emoji: '🐟' },
   { name: 'Canned Tuna (drained)',          serving_description: '1 can (~165 g)',          calories: 191, fat_g: 1.4,  carbs_g: 0,   protein_g: 42,  emoji: '🐟' },
@@ -172,39 +174,35 @@ const seedFoods = [
   { name: 'Bacon Strip',                    serving_description: '1 strip, cooked (~8 g)', calories: 43,  fat_g: 3.3,  carbs_g: 0.1, protein_g: 3,   emoji: '🥓' },
   { name: 'Marble Cheese (shredded)',       serving_description: '⅓ cup (~38 g)',           calories: 150, fat_g: 12,   carbs_g: 0.4, protein_g: 10,  emoji: '🧀' },
   { name: 'Greek Yogurt (plain, full-fat)', serving_description: '⅓ cup (~85 g)',           calories: 83,  fat_g: 4,    carbs_g: 4.8, protein_g: 7,   emoji: '🍶' },
-  { name: 'Avocado',                        serving_description: '½ avocado (~100 g)',      calories: 160, fat_g: 14.7, carbs_g: 8.5, protein_g: 2,   emoji: '🥑' },
-  { name: 'Broccoli',                       serving_description: '1 cup, chopped (~91 g)', calories: 31,  fat_g: 0.3,  carbs_g: 6,   protein_g: 2.6, emoji: '🥦' },
-  { name: 'Red Bell Pepper',                serving_description: '1 cup, sliced (~92 g)',  calories: 39,  fat_g: 0.4,  carbs_g: 9,   protein_g: 1.3, emoji: '🫑' },
-  { name: 'Zucchini',                       serving_description: '1 cup, sliced (~113 g)', calories: 20,  fat_g: 0.4,  carbs_g: 3.5, protein_g: 1.5, emoji: '🥒' },
-  { name: 'Lindt 85% Dark Chocolate',       serving_description: '1 square (~10 g)',        calories: 57,  fat_g: 4.5,  carbs_g: 4,   protein_g: 1,   emoji: '🍫' },
+  { name: 'Avocado',                        serving_description: '½ avocado (~100 g)',      calories: 160, fat_g: 14.7, carbs_g: 1.8, fiber_g: 6.7, protein_g: 2,   emoji: '🥑' },
+  { name: 'Broccoli',                       serving_description: '1 cup, chopped (~91 g)', calories: 31,  fat_g: 0.3,  carbs_g: 3.6, fiber_g: 2.4,   protein_g: 2.6, emoji: '🥦' },
+  { name: 'Red Bell Pepper',                serving_description: '1 cup, chopped (~149 g)',  calories: 39,  fat_g: 0.4,  carbs_g: 5.9, fiber_g: 3.1,   protein_g: 1.3, emoji: '🫑' },
+  { name: 'Zucchini',                       serving_description: '1 cup, sliced (~113 g)', calories: 20,  fat_g: 0.4,  carbs_g: 2.4, fiber_g: 1.1, protein_g: 1.5, emoji: '🥒' },
+  { name: 'Lindt 85% Dark Chocolate',       serving_description: '1 square (~10 g)',        calories: 57,  fat_g: 4.5,  carbs_g: 2.3, fiber_g: 1.5,   protein_g: 1,   emoji: '🍫' },
   { name: 'Chicken Broth',                   serving_description: '6 oz (177 ml)',           calories: 10,  fat_g: 0,    carbs_g: 1,   protein_g: 1,   emoji: '🍲' },
-  { name: 'Couscous',                        serving_description: '¼ cup dry (79 g)',        calories: 90,  fat_g: 1,    carbs_g: 18,  protein_g: 3,   emoji: '🫙' },
+  { name: 'Couscous',                        serving_description: '½ cup cooked (~79 g)',        calories: 90,  fat_g: 1,    carbs_g: 17.2, fiber_g: 1.1,  protein_g: 3,   emoji: '🫙' },
   { name: 'Feta Cheese',                     serving_description: '½ oz (~14 g)',            calories: 37,  fat_g: 2,    carbs_g: 1,   protein_g: 2,   emoji: '🧀' },
   { name: 'Shrimp',                          serving_description: '500 g',                   calories: 530, fat_g: 9,    carbs_g: 0,   protein_g: 100, emoji: '🍤' },
 ];
 
-// Full replacement of global (seeded) foods on every startup:
-//   1. Remove global foods not in the new list (cascades to daily_logs)
-//   2. Update globals that exist but may have changed portions/macros
-//   3. Insert new globals that don't exist yet
+// Global (seeded) food rows on every startup:
+//   1. Remove global foods not in the list (cascades to daily_logs)
+//   2. Insert new globals that don't exist yet
+// Existing global rows are deliberately NOT updated: logs from before per-user foods (March 2026)
+// still point at them, and corrections to the list apply to new accounts only.
 const newNames = seedFoods.map(f => f.name);
 const placeholders = newNames.map(() => '?').join(',');
 
 const replaceSeeds = db.transaction((foods) => {
   db.prepare(`DELETE FROM foods WHERE created_by_user_id IS NULL AND name NOT IN (${placeholders})`).run(...newNames);
 
-  const update = db.prepare(`
-    UPDATE foods SET serving_description=?, calories=?, fat_g=?, carbs_g=?, protein_g=?, emoji=?
-    WHERE name=? AND created_by_user_id IS NULL
-  `);
   const insert = db.prepare(`
-    INSERT INTO foods (name, serving_description, calories, fat_g, carbs_g, protein_g, emoji)
-    SELECT ?, ?, ?, ?, ?, ?, ?
+    INSERT INTO foods (name, serving_description, calories, fat_g, carbs_g, protein_g, fiber_g, emoji)
+    SELECT ?, ?, ?, ?, ?, ?, ?, ?
     WHERE NOT EXISTS (SELECT 1 FROM foods WHERE name=? AND created_by_user_id IS NULL)
   `);
   for (const f of foods) {
-    update.run(f.serving_description, f.calories, f.fat_g, f.carbs_g, f.protein_g, f.emoji, f.name);
-    insert.run(f.name, f.serving_description, f.calories, f.fat_g, f.carbs_g, f.protein_g, f.emoji, f.name);
+    insert.run(f.name, f.serving_description, f.calories, f.fat_g, f.carbs_g, f.protein_g, f.fiber_g || 0, f.emoji, f.name);
   }
 });
 replaceSeeds(seedFoods);
@@ -222,4 +220,5 @@ db.prepare(`
 `).run();
 
 module.exports = db;
+module.exports.seedFoods = seedFoods;
 module.exports.storageIsPersistent = persistent;
