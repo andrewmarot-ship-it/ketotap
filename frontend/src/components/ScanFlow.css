@@ -216,3 +216,13 @@
   color: var(--text-faint);
   text-align: center;
 }
+
+.sf-warning {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--over-limit);
+  background: var(--danger-bg);
+  border-radius: 12px;
+  padding: 8px 12px;
+}

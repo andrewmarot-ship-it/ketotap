@@ -1,7 +1,8 @@
 import { formatPortion } from '../utils/macroCalculator';
 import './FoodGrid.css';
 
-function FoodTile({ food, servings, onAdd, onRemove, onEdit, suggested, blocked }) {
+function FoodTile({ food, servings, onAdd, onRemove, onEdit, suggested, blockedReason }) {
+  const blocked = Boolean(blockedReason);
   const logged = servings > 0;
   const tileClass = [
     'food-tile',
@@ -46,6 +47,7 @@ function FoodTile({ food, servings, onAdd, onRemove, onEdit, suggested, blocked 
         <span className="food-tile-cals">
           {logged ? `${Math.round(food.calories * servings)} kcal eaten` : `${food.calories} kcal`}
         </span>
+        {blocked && <span className="food-tile-block">{blockedReason} over</span>}
       </div>
 
       <div className="food-tile-qty">
@@ -60,7 +62,7 @@ function FoodTile({ food, servings, onAdd, onRemove, onEdit, suggested, blocked 
         <button
           className="qty-btn qty-btn--plus"
           onClick={() => !blocked && onAdd(food)}
-          aria-label={`Add ${food.name}`}
+          aria-label={blocked ? `${food.name} would put you over (${blockedReason})` : `Add ${food.name}`}
           aria-disabled={blocked}
         >
           +
@@ -70,7 +72,7 @@ function FoodTile({ food, servings, onAdd, onRemove, onEdit, suggested, blocked 
   );
 }
 
-export default function FoodGrid({ foods, logs, onAdd, onRemove, onEdit, recommendedIds = new Set(), blockedIds = new Set() }) {
+export default function FoodGrid({ foods, logs, onAdd, onRemove, onEdit, recommendedIds = new Set(), blocked = new Map() }) {
   const servingsMap = {};
   for (const log of logs) {
     servingsMap[log.food_id] = (servingsMap[log.food_id] || 0) + log.servings * (log.portion_multiplier ?? 1);
@@ -96,7 +98,7 @@ export default function FoodGrid({ foods, logs, onAdd, onRemove, onEdit, recomme
           onRemove={onRemove}
           onEdit={onEdit}
           suggested={recommendedIds.has(food.id)}
-          blocked={blockedIds.has(food.id)}
+          blockedReason={blocked.get(food.id)}
         />
       ))}
     </div>

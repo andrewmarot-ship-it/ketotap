@@ -17,7 +17,7 @@ function formatBarcode(code) {
 }
 
 // Scan → (already saved | look up → found / not found) → save, optionally logging one serving
-export default function ScanFlow({ foods, onSave, onLogExisting, onClose }) {
+export default function ScanFlow({ foods, onSave, onLogExisting, onClose, getLimitWarning }) {
   const [step, setStep] = useState('scan');
   const [code, setCode] = useState('');
   const [existing, setExisting] = useState(null);
@@ -79,6 +79,13 @@ export default function ScanFlow({ foods, onSave, onLogExisting, onClose }) {
   const fiber = parseFloat(form.fiber_g) || 0;
   const netCarbs = Number.isFinite(total) ? Math.max(0, r1(total - fiber)) : null;
 
+  const formWarning = getLimitWarning && Number.isFinite(total)
+    ? getLimitWarning({ carbs_g: netCarbs, calories: Number(form.calories) || 0 })
+    : null;
+  const existingWarning = getLimitWarning && existing
+    ? getLimitWarning({ carbs_g: existing.carbs_g, calories: existing.calories })
+    : null;
+
   async function save(andLog) {
     setError('');
     const missing = ['name', 'serving_description', 'calories', 'fat_g', 'protein_g', 'total_carbs_g']
@@ -133,8 +140,11 @@ export default function ScanFlow({ foods, onSave, onLogExisting, onClose }) {
                 <span>{existing.serving_description} · {existing.calories} kcal</span>
               </div>
             </div>
+            {existingWarning && <p className="sf-warning">⚠ {existingWarning}</p>}
             <div className="sf-actions">
-              <button className="btn-primary" onClick={() => onLogExisting(existing)}>Log 1 serving</button>
+              <button className="btn-primary" onClick={() => onLogExisting(existing)}>
+                {existingWarning ? 'Log anyway' : 'Log 1 serving'}
+              </button>
               <button className="sf-secondary" onClick={() => setStep('scan')}>Scan another</button>
             </div>
           </>
@@ -179,10 +189,11 @@ export default function ScanFlow({ foods, onSave, onLogExisting, onClose }) {
             </div>
 
             {error && <p className="error-msg">{error}</p>}
+            {formWarning && <p className="sf-warning">⚠ {formWarning}</p>}
 
             <div className="sf-actions">
               <button className="btn-primary" onClick={() => save(true)} disabled={saving}>
-                {saving ? 'Saving…' : 'Save & log 1 serving'}
+                {saving ? 'Saving…' : formWarning ? 'Save & log anyway' : 'Save & log 1 serving'}
               </button>
               <button className="sf-secondary" onClick={() => save(false)} disabled={saving}>Save to my foods</button>
             </div>

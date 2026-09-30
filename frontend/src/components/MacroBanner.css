@@ -1,0 +1,122 @@
+.macro-banner {
+  --mb-bg: var(--gold-pale);
+  --mb-fg: #8A6E22;
+  --mb-accent: var(--gold);
+  --mb-edge: rgba(200, 168, 75, 0.45);
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 9px 8px 13px 12px;
+  border-radius: 14px;
+  background: var(--mb-bg);
+  color: var(--mb-fg);
+  box-shadow: inset 0 0 0 1px var(--mb-edge);
+  animation: mb-in 220ms ease-out;
+}
+
+@keyframes mb-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Limits: caution tones */
+.mb--limit-carbs    { --mb-bg: var(--gold-pale);  --mb-fg: #8A6E22; --mb-accent: var(--gold);        --mb-edge: rgba(200, 168, 75, 0.45); }
+.mb--limit-calories { --mb-bg: var(--brown-pale); --mb-fg: #6E4A2A; --mb-accent: var(--brown-light); --mb-edge: rgba(166, 124, 82, 0.4); }
+.mb--over           { --mb-bg: var(--danger-bg);  --mb-fg: var(--over-limit); --mb-accent: var(--over-limit); --mb-edge: rgba(185, 71, 47, 0.35); }
+
+/* Goals: encouraging tones, no border */
+.mb--goal-fat,
+.mb--done-fat       { --mb-bg: var(--brown-pale); --mb-fg: var(--brown); --mb-accent: var(--brown); --mb-edge: transparent; }
+.mb--goal-protein,
+.mb--done-protein   { --mb-bg: var(--green-pale); --mb-fg: var(--green); --mb-accent: var(--green); --mb-edge: transparent; }
+
+.mb-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.mb-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+
+.mb-text strong {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.mb-text span {
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.mb-pill {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  border-radius: 8px;
+  padding: 2px 8px;
+  background: var(--mb-accent);
+  color: white;
+}
+
+.mb--goal-fat .mb-pill,
+.mb--goal-protein .mb-pill {
+  background: white;
+  color: var(--mb-fg);
+  box-shadow: inset 0 0 0 1px currentColor;
+}
+
+.mb-more {
+  flex-shrink: 0;
+  background: none;
+  color: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  padding: 4px 2px;
+}
+
+.mb-close {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 14px;
+  background: none;
+  color: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  opacity: 0.6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mb-close:hover { opacity: 1; }
+
+.mb-bar {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 4px;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.65);
+  overflow: hidden;
+}
+
+.mb-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--mb-accent);
+  transition: width 0.3s ease;
+}

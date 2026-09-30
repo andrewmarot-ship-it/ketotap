@@ -1,4 +1,5 @@
 .macro-chip {
+  transition: box-shadow 0.25s ease;
   display: flex;
   align-items: center;
   gap: 10px;

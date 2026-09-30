@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { foodsApi, nutritionApi, logsApi } from '../api/client';
+import { foodsApi, nutritionApi, logsApi, targetsApi } from '../api/client';
+import { computeTotals, limitWarning } from '../utils/macroStatus';
 import BottomNav from '../components/BottomNav';
 import ScanFlow from '../components/ScanFlow';
 import BarcodeIcon from '../components/BarcodeIcon';
@@ -28,6 +29,7 @@ export default function FoodsPage() {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [scanning, setScanning] = useState(false);
   const [notice, setNotice] = useState('');
+  const [today, setToday] = useState(null); // { targets, totals } for scan warnings
 
   // Nutrition auto-fill state
   const [autoFilled, setAutoFilled] = useState(new Set());
@@ -163,6 +165,17 @@ export default function FoodsPage() {
     }
   }
 
+  // Scans from this page log to today, so load today's totals to warn before going over
+  async function openScanner() {
+    setScanning(true);
+    try {
+      const [t, l] = await Promise.all([targetsApi.get(), logsApi.getDay(todayStr())]);
+      setToday({ targets: t.data, totals: computeTotals(l.data) });
+    } catch {
+      setToday(null);
+    }
+  }
+
   function flash(message) {
     setNotice(message);
     setTimeout(() => setNotice(''), 3500);
@@ -225,7 +238,7 @@ export default function FoodsPage() {
             <h1 className="page-title">Food Inventory</h1>
           </div>
           <div className="foods-header-actions">
-            <button className="btn-scan" onClick={() => setScanning(true)}>
+            <button className="btn-scan" onClick={openScanner}>
               <BarcodeIcon /> Scan
             </button>
             <button className="btn-add" onClick={openNew}>+ Add Food</button>
@@ -406,6 +419,7 @@ export default function FoodsPage() {
       {scanning && (
         <ScanFlow
           foods={foods}
+          getLimitWarning={today ? macros => limitWarning(macros, today.totals, today.targets) : undefined}
           onSave={handleScanSave}
           onLogExisting={handleScanLog}
           onClose={() => setScanning(false)}

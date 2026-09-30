@@ -44,8 +44,23 @@
 
 /* Blocked — would overshoot the calorie budget */
 .food-tile--blocked {
-  opacity: 0.35;
+  background: var(--cream);
+  box-shadow: none;
+}
+
+.food-tile--blocked .food-tile-img-wrap,
+.food-tile--blocked .food-tile-name,
+.food-tile--blocked .food-tile-serving,
+.food-tile--blocked .food-tile-cals,
+.food-tile--blocked .qty-btn--plus {
+  opacity: 0.4;
   filter: grayscale(60%);
+}
+
+.food-tile-block {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--over-limit);
 }
 
 .food-tile--blocked .qty-btn--plus {

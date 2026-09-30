@@ -7,6 +7,8 @@ import ScanFlow from '../components/ScanFlow';
 import BarcodeIcon from '../components/BarcodeIcon';
 import MacroChip from '../components/MacroChip';
 import { ketoScore } from '../utils/macroCalculator';
+import { computeTotals, computeAlerts, computeBlocked, computeRecommended, suggestFoodForGoal, limitWarning } from '../utils/macroStatus';
+import MacroBanner from '../components/MacroBanner';
 import FoodGrid from '../components/FoodGrid';
 import PresetsRow from '../components/PresetsRow';
 import PresetModal from '../components/PresetModal';
@@ -116,49 +118,15 @@ export default function DashboardPage() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // Compute today's totals from logs, factoring in portion_multiplier
-  const totals = logs.reduce((acc, log) => {
-    const m = log.portion_multiplier ?? 1;
-    return {
-      calories:  acc.calories  + log.calories  * log.servings * m,
-      fat_g:     acc.fat_g     + log.fat_g     * log.servings * m,
-      protein_g: acc.protein_g + log.protein_g * log.servings * m,
-      carbs_g:   acc.carbs_g   + log.carbs_g   * log.servings * m,
-    };
-  }, { calories: 0, fat_g: 0, protein_g: 0, carbs_g: 0 });
-
-  // Smart suggestions — activate within 15% of calorie target
-  const SUGGESTION_THRESHOLD = 0.85;
-  const pctUsed = targets ? totals.calories / targets.calories : 0;
-  const suggestionsActive = targets && pctUsed >= SUGGESTION_THRESHOLD;
-  const overTarget = targets && pctUsed >= 1;
-  const remainingCal = targets ? Math.max(0, targets.calories - totals.calories) : 0;
-
-  let recommendedIds = new Set();
-  let blockedIds = new Set();
-
-  if (suggestionsActive && foods.length > 0) {
-    const remainingFat = Math.max(0, targets.fat_g - totals.fat_g);
-    const remainingProtein = Math.max(0, targets.protein_g - totals.protein_g);
-
-    const scored = foods
-      .filter(f => f.calories <= remainingCal)
-      .map(f => {
-        // Keto weighting: fat counts 2×, protein 1×
-        const fatScore = remainingFat > 0 ? Math.min(f.fat_g / remainingFat, 1) : 0;
-        const proteinScore = remainingProtein > 0 ? Math.min(f.protein_g / remainingProtein, 1) : 0;
-        return { id: f.id, score: fatScore * 2 + proteinScore };
-      })
-      .filter(f => f.score > 0.1)
-      .sort((a, b) => b.score - a.score);
-
-    recommendedIds = new Set(scored.slice(0, 3).map(f => f.id));
-    blockedIds = new Set(foods.filter(f => f.calories > remainingCal).map(f => f.id));
-  }
+  const totals = computeTotals(logs);
+  const alerts = computeAlerts(totals, targets);
+  const alertKeys = new Set(alerts.map(a => a.key));
+  const blocked = computeBlocked(foods, totals, targets);
+  const recommendedIds = computeRecommended(foods, totals, targets, blocked);
 
   // Opens the Portion Picker for a fresh add, or increments servings if already logged
   async function handleAdd(food) {
-    if (blockedIds.has(food.id)) return;
+    if (blocked.has(food.id)) return;
     const existing = logs.find(l => l.food_id === food.id);
     if (existing) {
       try {
@@ -328,10 +296,10 @@ export default function DashboardPage() {
 
   const carbsOver = targets && totals.carbs_g > targets.carbs_g;
   const macros = targets ? [
-    { label: 'Fat',       short: 'Fat',   emoji: '🧈', current: Math.round(totals.fat_g),     target: targets.fat_g,     unit: 'g', color: 'var(--macro-fat)',      bg: 'var(--brown-pale)' },
-    { label: 'Protein',   short: 'Prot',  emoji: '🥩', current: Math.round(totals.protein_g), target: targets.protein_g, unit: 'g', color: 'var(--macro-protein)',  bg: 'var(--green-pale)' },
-    { label: 'Net carbs', short: 'Carbs', emoji: '🥦', current: Math.round(totals.carbs_g),   target: targets.carbs_g,   unit: 'g', color: 'var(--macro-carbs)',    bg: 'var(--gold-pale)', over: carbsOver },
-    { label: 'Calories',  short: 'Cal',   emoji: '🔥', current: Math.round(totals.calories),  target: targets.calories,  unit: '',  color: 'var(--macro-calories)', bg: 'var(--brown-pale)' },
+    { key: 'fat',      label: 'Fat',       short: 'Fat',   emoji: '🧈', current: Math.round(totals.fat_g),     target: targets.fat_g,     unit: 'g', color: 'var(--macro-fat)',      bg: 'var(--brown-pale)' },
+    { key: 'protein',  label: 'Protein',   short: 'Prot',  emoji: '🥩', current: Math.round(totals.protein_g), target: targets.protein_g, unit: 'g', color: 'var(--macro-protein)',  bg: 'var(--green-pale)' },
+    { key: 'carbs',    label: 'Net carbs', short: 'Carbs', emoji: '🥦', current: Math.round(totals.carbs_g),   target: targets.carbs_g,   unit: 'g', color: 'var(--macro-carbs)',    bg: 'var(--gold-pale)', over: carbsOver },
+    { key: 'calories', label: 'Calories',  short: 'Cal',   emoji: '🔥', current: Math.round(totals.calories),  target: targets.calories,  unit: '',  color: 'var(--macro-calories)', bg: 'var(--brown-pale)', over: targets && totals.calories > targets.calories },
   ] : [];
   const score = ketoScore(totals, targets);
 
@@ -364,9 +332,17 @@ export default function DashboardPage() {
         {targets && (
           <div className="macro-chips" ref={setRingsEl}>
             {macros.map(m => (
-              <MacroChip key={m.label} {...m} />
+              <MacroChip key={m.label} {...m} highlight={alertKeys.has(m.key)} />
             ))}
           </div>
+        )}
+        {targets && (
+          <MacroBanner
+            alerts={alerts}
+            date={viewDate}
+            blockedCount={blocked.size}
+            getSuggestion={alert => suggestFoodForGoal(alert, foods, totals, targets)}
+          />
         )}
       </div>
 
@@ -384,22 +360,6 @@ export default function DashboardPage() {
           <button className="date-nav-btn" onClick={() => setViewDate(d => offsetDate(d, 1))} disabled={viewDate === today}>›</button>
         </div>
 
-
-        {suggestionsActive && (
-          <div className={`smart-banner ${overTarget ? 'smart-banner--over' : ''}`}>
-            <div className="smart-banner-icon">{overTarget ? '🎉' : '🎯'}</div>
-            <div className="smart-banner-body">
-              <span className="smart-banner-title">
-                {overTarget ? 'Calorie goal reached!' : `${Math.round(remainingCal)} kcal remaining`}
-              </span>
-              <span className="smart-banner-sub">
-                {overTarget
-                  ? 'Foods are locked to protect your goal'
-                  : 'Glowing items fit your budget · greyed items would overshoot'}
-              </span>
-            </div>
-          </div>
-        )}
 
         <div className="presets-section">
           <div className="presets-section-header">
@@ -486,7 +446,7 @@ export default function DashboardPage() {
             onRemove={handleRemove}
             onEdit={handleEdit}
             recommendedIds={recommendedIds}
-            blockedIds={blockedIds}
+            blocked={blocked}
           />
         )}
 
@@ -513,6 +473,7 @@ export default function DashboardPage() {
       {scanning && (
         <ScanFlow
           foods={foods}
+          getLimitWarning={macros => limitWarning(macros, totals, targets)}
           onSave={handleScanSave}
           onLogExisting={handleScanLog}
           onClose={() => setScanning(false)}
