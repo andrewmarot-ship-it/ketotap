@@ -102,7 +102,7 @@ router.post('/', (req, res) => {
   const { food_id, servings = 1, date, portion_multiplier = 1 } = req.body;
   if (!food_id) return res.status(400).json({ error: 'food_id is required' });
 
-  const food = db.prepare('SELECT id FROM foods WHERE id = ?').get(food_id);
+  const food = db.prepare('SELECT id FROM foods WHERE id = ? AND created_by_user_id = ? AND deleted_at IS NULL').get(food_id, req.user.id);
   if (!food) return res.status(404).json({ error: 'Food not found' });
 
   const logDate = date || new Date().toISOString().split('T')[0];

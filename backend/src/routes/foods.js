@@ -20,7 +20,7 @@ function parseFiber(v) {
 
 // Get all foods
 router.get('/', (req, res) => {
-  const foods = db.prepare('SELECT * FROM foods WHERE created_by_user_id = ? ORDER BY name ASC').all(req.user.id);
+  const foods = db.prepare('SELECT * FROM foods WHERE created_by_user_id = ? AND deleted_at IS NULL ORDER BY name ASC').all(req.user.id);
   res.json(foods);
 });
 
@@ -51,7 +51,7 @@ router.post('/', (req, res) => {
 
 // Update food
 router.put('/:id', (req, res) => {
-  const food = db.prepare('SELECT * FROM foods WHERE id = ? AND created_by_user_id = ?').get(req.params.id, req.user.id);
+  const food = db.prepare('SELECT * FROM foods WHERE id = ? AND created_by_user_id = ? AND deleted_at IS NULL').get(req.params.id, req.user.id);
   if (!food) return res.status(403).json({ error: 'Food not found or access denied' });
 
   const { name, serving_description, calories, fat_g, protein_g, carbs_g, emoji, fiber_g } = req.body;
@@ -90,10 +90,14 @@ router.put('/:id', (req, res) => {
 
 // Delete food
 router.delete('/:id', (req, res) => {
-  const food = db.prepare('SELECT * FROM foods WHERE id = ? AND created_by_user_id = ?').get(req.params.id, req.user.id);
+  const food = db.prepare('SELECT * FROM foods WHERE id = ? AND created_by_user_id = ? AND deleted_at IS NULL').get(req.params.id, req.user.id);
   if (!food) return res.status(403).json({ error: 'Food not found or access denied' });
 
-  db.prepare('DELETE FROM foods WHERE id = ?').run(req.params.id);
+  // Hide rather than delete: past logs keep pointing at this row so history totals don't change
+  db.transaction(() => {
+    db.prepare("UPDATE foods SET deleted_at = datetime('now') WHERE id = ?").run(req.params.id);
+    db.prepare('DELETE FROM meal_preset_items WHERE food_id = ?').run(req.params.id);
+  })();
   res.json({ message: 'Food deleted' });
 });
 

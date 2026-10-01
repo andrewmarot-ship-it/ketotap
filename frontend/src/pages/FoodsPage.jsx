@@ -407,7 +407,8 @@ export default function FoodsPage() {
         <div className="modal-overlay" onClick={() => setDeleteConfirm(null)}>
           <div className="modal-box card" onClick={e => e.stopPropagation()}>
             <h2>Delete Food</h2>
-            <p>Are you sure you want to delete <strong>{deleteConfirm.name}</strong>?</p>
+            <p>Delete <strong>{deleteConfirm.name}</strong> from your foods?</p>
+            <p className="delete-note">Past days that include it keep their totals. It's also removed from any presets.</p>
             <div className="form-actions" style={{ marginTop: 20 }}>
               <button className="btn-secondary" onClick={() => setDeleteConfirm(null)}>Cancel</button>
               <button className="btn-danger" onClick={() => handleDelete(deleteConfirm)}>Delete</button>

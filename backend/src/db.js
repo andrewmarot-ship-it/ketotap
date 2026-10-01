@@ -155,6 +155,11 @@ for (const stmt of [
 }
 db.exec('CREATE INDEX IF NOT EXISTS idx_foods_user_barcode ON foods(created_by_user_id, barcode)');
 
+// Deleted foods are hidden, not removed, so past days that logged them keep their totals
+try {
+  db.exec('ALTER TABLE foods ADD COLUMN deleted_at TEXT');
+} catch (_) { /* column already exists */ }
+
 // ── Default food list ────────────────────────────────────────────────────────
 // carbs_g is NET carbs (total − fiber). Figures are USDA SR Legacy scaled to the serving shown;
 // Lindt uses its own label. New accounts copy this list directly (see routes/auth.js).
@@ -186,7 +191,7 @@ const seedFoods = [
 ];
 
 // Global (seeded) food rows on every startup:
-//   1. Remove global foods not in the list (cascades to daily_logs)
+//   1. Remove global foods not in the list, unless something still references them
 //   2. Insert new globals that don't exist yet
 // Existing global rows are deliberately NOT updated: logs from before per-user foods (March 2026)
 // still point at them, and corrections to the list apply to new accounts only.
@@ -194,7 +199,12 @@ const newNames = seedFoods.map(f => f.name);
 const placeholders = newNames.map(() => '?').join(',');
 
 const replaceSeeds = db.transaction((foods) => {
-  db.prepare(`DELETE FROM foods WHERE created_by_user_id IS NULL AND name NOT IN (${placeholders})`).run(...newNames);
+  // Never remove a global row that logs or presets still point at (deleting it would cascade)
+  db.prepare(`
+    DELETE FROM foods WHERE created_by_user_id IS NULL AND name NOT IN (${placeholders})
+      AND id NOT IN (SELECT food_id FROM daily_logs)
+      AND id NOT IN (SELECT food_id FROM meal_preset_items)
+  `).run(...newNames);
 
   const insert = db.prepare(`
     INSERT INTO foods (name, serving_description, calories, fat_g, carbs_g, protein_g, fiber_g, emoji)
