@@ -42,18 +42,22 @@ export default function ScanFlow({ foods, onSave, onLogExisting, onClose, getLim
     setStep('lookup');
     try {
       const { data } = await nutritionApi.barcode(digits);
+      const value = v => (v === null || v === undefined ? '' : v);
       setForm({
         name: data.name || '',
         serving_description: data.serving_description || '',
-        calories: data.calories,
-        fat_g: data.fat_g,
-        protein_g: data.protein_g,
-        total_carbs_g: data.total_carbs_g,
-        fiber_g: data.fiber_g,
+        calories: value(data.calories),
+        fat_g: value(data.fat_g),
+        protein_g: value(data.protein_g),
+        total_carbs_g: value(data.total_carbs_g),
+        fiber_g: value(data.fiber_g),
       });
-      setAutoFilled(new Set(['serving_description', ...NUMERIC]));
+      // Only mark fields the database actually supplied
+      setAutoFilled(new Set(['serving_description', ...NUMERIC].filter(k => data[k] !== null && data[k] !== undefined && data[k] !== '')));
       setSource(data.source);
-      setNotice('');
+      setNotice(data.incomplete
+        ? `${data.source} knows this product but not all of its nutrition. Fill in the blank fields from the label.`
+        : '');
     } catch (err) {
       setForm(EMPTY);
       setAutoFilled(new Set());
@@ -152,9 +156,11 @@ export default function ScanFlow({ foods, onSave, onLogExisting, onClose, getLim
 
         {step === 'form' && (
           <>
-            {source
-              ? <span className="sf-badge">✓ Found it</span>
-              : <span className="sf-badge sf-badge--miss">Not found</span>}
+            {!source
+              ? <span className="sf-badge sf-badge--miss">Not found</span>
+              : notice
+                ? <span className="sf-badge sf-badge--miss">Found, needs macros</span>
+                : <span className="sf-badge">✓ Found it</span>}
             {notice && <p className="sf-notice">{notice}</p>}
 
             <div className="sf-found">

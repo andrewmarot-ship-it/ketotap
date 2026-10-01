@@ -180,8 +180,26 @@ const FIBER_IN_CARBS_COUNTRIES = ['en:united-states', 'en:canada', 'en:mexico'];
 
 const r1 = v => Math.round(v * 10) / 10;
 
+// UPC-E (8 digits, number system 0/1) is a compressed UPC-A used on small packages.
+// Databases store the full 12-digit form, so expand it. Returns null if not UPC-E shaped.
+function expandUpcE(code) {
+  if (code.length !== 8 || !/^[01]/.test(code)) return null;
+  const ns = code[0];
+  const d = code.slice(1, 7);
+  const check = code[7];
+  const last = d[5];
+  let body;
+  if ('012'.includes(last)) body = d[0] + d[1] + last + '0000' + d[2] + d[3] + d[4];
+  else if (last === '3') body = d[0] + d[1] + d[2] + '00000' + d[3] + d[4];
+  else if (last === '4') body = d[0] + d[1] + d[2] + d[3] + '00000' + d[4];
+  else body = d[0] + d[1] + d[2] + d[3] + d[4] + '0000' + last;
+  return ns + body + check;
+}
+
 function barcodeVariants(code) {
   const variants = [code];
+  const upcA = expandUpcE(code);
+  if (upcA) variants.push(upcA, '0' + upcA);
   if (code.length === 12) variants.push('0' + code);
   if (code.length === 13 && code.startsWith('0')) variants.push(code.slice(1));
   return variants;
@@ -192,8 +210,11 @@ function num(v) {
   return Number.isFinite(n) ? n : null;
 }
 
+// Returns { ...product, incomplete } where any of calories/fat/protein/carbs may be null when
+// Open Food Facts knows the product but not all of its nutrition. Returns null if unknown.
 async function lookupOpenFoodFacts(code) {
   const fields = 'code,product_name,brands,serving_size,serving_quantity,nutriments,countries_tags';
+  let partial = null;
   for (const variant of barcodeVariants(code)) {
     let body;
     try {
@@ -209,42 +230,52 @@ async function lookupOpenFoodFacts(code) {
     const grams = num(p.serving_quantity);
     const per100 = key => num(n[`${key}_100g`]);
     const perServing = key => num(n[`${key}_serving`]);
+    const CORE = ['energy-kcal', 'energy', 'fat', 'proteins', 'carbohydrates'];
+    const hasAny = getter => CORE.some(k => getter(k) !== null);
 
+    // Pick one basis for all values: per 100 g scaled to the serving, per serving, or per 100 g
     let pick, serving;
-    if (grams && per100('fat') !== null) {
-      pick = key => (per100(key) ?? 0) * grams / 100;
+    if (grams && hasAny(per100)) {
+      pick = key => (per100(key) === null ? null : per100(key) * grams / 100);
       serving = p.serving_size || `${grams} g`;
-    } else if (perServing('fat') !== null) {
-      pick = key => perServing(key) ?? 0;
+    } else if (hasAny(perServing)) {
+      pick = perServing;
       serving = p.serving_size || '1 serving';
-    } else if (per100('fat') !== null) {
-      pick = key => per100(key) ?? 0;
+    } else if (hasAny(per100)) {
+      pick = per100;
       serving = '100 g';
     } else {
-      continue; // product exists but has no usable nutrition
+      pick = () => null;
+      serving = p.serving_size || '';
     }
 
     let kcal = pick('energy-kcal');
-    if (!kcal) kcal = pick('energy') / 4.184; // some entries only have kJ
-
+    if (kcal === null && pick('energy') !== null) kcal = pick('energy') / 4.184; // some entries only have kJ
+    const fat = pick('fat');
+    const protein = pick('proteins');
     const carbs = pick('carbohydrates');
     const fiber = pick('fiber');
     const tags = p.countries_tags || [];
     const fiberIncluded = tags.length === 0 || tags.some(t => FIBER_IN_CARBS_COUNTRIES.includes(t));
+    const totalCarbs = carbs === null ? null : (fiberIncluded || fiber === null ? carbs : carbs + fiber);
 
-    return {
+    const product = {
       source: 'Open Food Facts',
       name: (p.product_name || p.brands || '').trim(),
       brand: (p.brands || '').split(',')[0].trim() || null,
       serving_description: serving,
-      calories: Math.round(kcal),
-      fat_g: r1(pick('fat')),
-      protein_g: r1(pick('proteins')),
-      total_carbs_g: r1(fiberIncluded ? carbs : carbs + fiber),
-      fiber_g: r1(fiber),
+      calories: kcal === null ? null : Math.round(kcal),
+      fat_g: fat === null ? null : r1(fat),
+      protein_g: protein === null ? null : r1(protein),
+      total_carbs_g: totalCarbs === null ? null : r1(totalCarbs),
+      fiber_g: fiber === null ? null : r1(fiber),
     };
+    product.incomplete = [product.calories, product.fat_g, product.protein_g, product.total_carbs_g].some(v => v === null);
+    if (!product.incomplete) return product;
+    // Keep the most useful partial match and keep looking for a complete one
+    if (!partial || (product.name && !partial.name)) partial = product;
   }
-  return null;
+  return partial;
 }
 
 function titleCase(str) {
@@ -253,11 +284,12 @@ function titleCase(str) {
 
 async function lookupUsdaBranded(code) {
   const apiKey = process.env.USDA_FDC_API_KEY || 'DEMO_KEY';
+  const upc = expandUpcE(code) || code; // USDA stores full UPC-A
   const result = await httpsGet(
-    `https://api.nal.usda.gov/fdc/v1/foods/search?query=${code}&dataType=Branded&pageSize=10&api_key=${apiKey}`
+    `https://api.nal.usda.gov/fdc/v1/foods/search?query=${upc}&dataType=Branded&pageSize=10&api_key=${apiKey}`
   );
   const strip = s => String(s || '').replace(/^0+/, '');
-  const match = (result.foods || []).find(f => strip(f.gtinUpc) === strip(code));
+  const match = (result.foods || []).find(f => strip(f.gtinUpc) === strip(upc));
   if (!match) return null;
 
   // Branded search results report nutrients per 100 g/ml
@@ -297,19 +329,27 @@ router.get('/barcode/:code', async (req, res) => {
   }
 
   let product = null;
+  let partial = null;
   let lastErr = null;
   for (const lookup of [lookupOpenFoodFacts, lookupUsdaBranded]) {
     try {
-      product = await lookup(code);
-      if (product) break;
+      const found = await lookup(code);
+      if (found && !found.incomplete) { product = found; break; }
+      if (found && !partial) partial = found;
     } catch (err) {
       console.error(`[nutrition] barcode ${lookup.name} error:`, err.message);
       lastErr = err;
     }
   }
+  if (!product && partial) {
+    // Known product, missing nutrition: return what we have. Short cache so later data is picked up.
+    const data = { barcode: code, ...partial };
+    cache.set(cacheKey, { data, expiresAt: now + CACHE_TTL_BARCODE_MISS_MS, purgeAt: now + CACHE_TTL_BARCODE_MISS_MS });
+    return res.json(data);
+  }
 
   if (product) {
-    const data = { barcode: code, ...product };
+    const data = { barcode: code, ...product, incomplete: false };
     cache.set(cacheKey, { data, expiresAt: now + CACHE_TTL_BARCODE_MS, purgeAt: now + 2 * CACHE_TTL_BARCODE_MS });
     return res.json(data);
   }
@@ -416,3 +456,5 @@ router.get('/lookup', async (req, res) => {
 });
 
 module.exports = router;
+module.exports.expandUpcE = expandUpcE;
+module.exports.barcodeVariants = barcodeVariants;
